@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHH CLM Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white rounded-lg shadow-xl p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h1 class="text-3xl font-bold text-gray-800">PHH CLM Generator</h1>
+            </div>
+            
+            <p class="text-gray-600 mb-8">
+                Upload the required files to generate the Client Level Margin (CLM) report
+            </p>
+
+            <div id="error" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p class="text-red-800"></p>
+            </div>
+
+            <div class="space-y-6 mb-8">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-indigo-400 transition">
+                    <label class="flex flex-col items-center cursor-pointer">
+                        <svg id="customerIcon" class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <span id="customerLabel" class="text-sm font-medium text-gray-700 mb-1">
+                            Upload PHH Customer Tiers (CSV)
+                        </span>
+                        <span class="text-xs text-gray-500">CSV file</span>
+                        <input type="file" id="customerFile" accept=".csv" class="hidden">
+                    </label>
+                </div>
+
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-indigo-400 transition">
+                    <label class="flex flex-col items-center cursor-pointer">
+                        <svg id="adjustorIcon" class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <span id="adjustorLabel" class="text-sm font-medium text-gray-700 mb-1">
+                            Upload Non-Agency Adjustors Template (Excel or CSV)
+                        </span>
+                        <span class="text-xs text-gray-500">Excel or CSV file</span>
+                        <input type="file" id="adjustorFile" accept=".xlsx,.xls,.csv" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <button id="generateBtn" disabled class="w-full bg-gray-300 text-white py-3 px-6 rounded-lg font-medium cursor-not-allowed transition flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>Generate CLM File</span>
+            </button>
+
+            <div id="preview" class="hidden mt-8">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Preview (First 10 Rows)</h2>
+                <div class="overflow-x-auto border rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller Name</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Margin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let customerTiers = null;
+        let adjustorsTemplate = null;
+
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            return lines.map(line => {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                return values;
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.querySelector('p').textContent = message;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+        }
+
+        function updateIcon(iconId, labelId, uploaded, text) {
+            const icon = document.getElementById(iconId);
+            const label = document.getElementById(labelId);
+            if (uploaded) {
+                icon.classList.remove('text-gray-400');
+                icon.classList.add('text-green-600');
+                label.textContent = text;
+            }
+        }
+
+        function checkGenerateButton() {
+            const btn = document.getElementById('generateBtn');
+            if (customerTiers && adjustorsTemplate) {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'cursor-pointer');
+            }
+        }
+
+        document.getElementById('customerFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    customerTiers = parseCSV(event.target.result);
+                    console.log("Loaded customer tiers:", customerTiers.length, "rows");
+                    updateIcon('customerIcon', 'customerLabel', true, '✓ PHH Customer Tiers Uploaded');
+                    checkGenerateButton();
+                } catch (err) {
+                    showError('Error reading Customer Tiers: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('adjustorFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            
+            if (file.name.endsWith('.csv')) {
+                reader.onload = function(event) {
+                    try {
+                        adjustorsTemplate = parseCSV(event.target.result);
+                        console.log("Loaded adjustors template (CSV):", adjustorsTemplate.length, "rows");
+                        updateIcon('adjustorIcon', 'adjustorLabel', true, '✓ Non-Agency Adjustors Template Uploaded');
+                        checkGenerateButton();
+                    } catch (err) {
+                        showError('Error reading Adjustors Template: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                reader.onload = function(event) {
+                    try {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        adjustorsTemplate = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                        console.log("Loaded adjustors template (Excel):", adjustorsTemplate.length, "rows");
+                        updateIcon('adjustorIcon', 'adjustorLabel', true, '✓ Non-Agency Adjustors Template Uploaded');
+                        checkGenerateButton();
+                    } catch (err) {
+                        showError('Error reading Adjustors Template: ' + err.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            if (!customerTiers || !adjustorsTemplate) {
+                showError('Please upload both files first');
+                return;
+            }
+
+            try {
+                // Parse Customer Tiers - column 5 is "DEL NonAgency"
+                const customerData = [];
+                for (let i = 1; i < customerTiers.length; i++) {
+                    const row = customerTiers[i];
+                    if (row[0] && row[1]) {
+                        customerData.push({
+                            sellerName: row[0],
+                            sellerCode: row[1],
+                            tier: row[5] || ''  // DEL NonAgency column (index 5)
+                        });
+                    }
+                }
+                console.log("Parsed customers:", customerData.length);
+
+                // Parse Adjustors Template
+                const productData = {};
+                
+                for (let i = 0; i < adjustorsTemplate.length; i++) {
+                    const row = adjustorsTemplate[i];
+                    if (!row || !row[0]) continue;
+                    
+                    const productCode = String(row[0]).toUpperCase();
+                    
+                    if (productCode === 'FULLDOC' || productCode === 'ALTDOC' || productCode === 'DSCR') {
+                        // Find tier columns - columns E through O (indices 4-14) are TIER 2 through TIER 12
+                        const margins = {};
+                        for (let tier = 2; tier <= 12; tier++) {
+                            const colIdx = tier + 2; // TIER 2 is at index 4, TIER 3 at index 5, etc.
+                            const value = row[colIdx];
+                            margins[tier] = (value !== null && value !== undefined && value !== '') ? parseFloat(value) : 0.0;
+                        }
+                        productData[productCode] = margins;
+                        console.log(`Product ${productCode}:`, margins);
+                    }
+                }
+
+                // Generate CLM rows
+                const clmData = [];
+                const productCodes = ['FULLDOC', 'ALTDOC', 'DSCR'];
+
+                customerData.forEach(customer => {
+                    // Extract tier number from Del NonAgency (e.g., "NA3" -> 3)
+                    let tierNum = null;
+                    if (customer.tier) {
+                        const match = String(customer.tier).match(/\d+/);
+                        if (match) {
+                            tierNum = parseInt(match[0]);
+                        }
+                    }
+
+                    productCodes.forEach(productCode => {
+                        let margin = 0.0;
+                        if (productData[productCode] && tierNum && productData[productCode][tierNum] !== undefined) {
+                            margin = productData[productCode][tierNum];
+                        }
+
+                        clmData.push({
+                            'Seller Name': customer.sellerName,
+                            'Seller Code': customer.sellerCode,
+                            'Product Code': productCode,
+                            'Margin': margin.toFixed(2)
+                        });
+                    });
+                });
+
+                console.log("Generated CLM rows:", clmData.length);
+
+                // Show preview
+                const previewBody = document.getElementById('previewBody');
+                previewBody.innerHTML = '';
+                clmData.slice(0, 10).forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-gray-900">${row['Seller Name']}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">${row['Seller Code']}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${row['Product Code']}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 font-medium">${row['Margin']}</td>
+                    `;
+                    previewBody.appendChild(tr);
+                });
+                document.getElementById('preview').classList.remove('hidden');
+
+                // Generate CSV content
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                const filename = 'CLM_' + timestamp + '.csv';
+
+                const headers = ['Seller Name', 'Seller Code', 'Product Code', 'Margin'];
+                const csvContent = [
+                    headers.join(','),
+                    ...clmData.map(row => 
+                        headers.map(h => {
+                            const value = row[h];
+                            return typeof value === 'string' && value.includes(',') ? '"' + value + '"' : value;
+                        }).join(',')
+                    )
+                ].join('\n');
+
+                // Create download link
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                // Show success message
+                const successMsg = document.createElement('div');
+                successMsg.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+                successMsg.innerHTML = `
+                    <p class="text-green-800 font-medium">✓ CLM file generated successfully!</p>
+                    <p class="text-green-700 text-sm mt-1">File: ${filename} (${clmData.length} rows)</p>
+                    <p class="text-green-600 text-xs mt-1">If download didn't start automatically, check your browser's download folder.</p>
+                `;
+                const preview = document.getElementById('preview');
+                preview.parentNode.insertBefore(successMsg, preview.nextSibling);
+                
+                setTimeout(() => successMsg.remove(), 10000);
+
+            } catch (err) {
+                showError('Error generating CLM: ' + err.message);
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>
