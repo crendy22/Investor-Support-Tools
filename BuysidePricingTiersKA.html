@@ -1,0 +1,781 @@
+import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
+
+const LoanNEXInvestorReportGenerator = () => {
+  const [dataStatus, setDataStatus] = useState({
+    companyProducts: { loading: false, loaded: false, count: 0, error: null },
+    organizations: { loading: false, loaded: false, count: 0, error: null },
+    buyerPricingTiers: { loading: false, loaded: false, count: 0, error: null }
+  });
+
+  const [processedData, setProcessedData] = useState({
+    companyProducts: [],
+    organizations: [],
+    buyerPricingTiers: []
+  });
+
+  const [investors, setInvestors] = useState([]);
+  const [selectedInvestors, setSelectedInvestors] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [generatedReports, setGeneratedReports] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleFileUpload = async (event, fileType) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setDataStatus(prev => ({
+      ...prev,
+      [fileType]: { ...prev[fileType], loading: true, error: null }
+    }));
+
+    setError('');
+
+    try {
+      const text = await file.text();
+      
+      Papa.parse(text, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        delimitersToGuess: [',', '\t', '|', ';'],
+        complete: (results) => {
+          if (results.errors.length > 0) {
+            console.warn(`Parsing warnings for ${fileType}:`, results.errors);
+          }
+
+          const cleanedData = results.data
+            .map(row => {
+              const cleanedRow = {};
+              Object.keys(row).forEach(header => {
+                const cleanedHeader = header.trim();
+                cleanedRow[cleanedHeader] = row[header];
+              });
+              return cleanedRow;
+            })
+            .filter(row => {
+              return Object.values(row).some(
+                value => value !== null && value !== undefined && value !== ''
+              );
+            });
+
+          setProcessedData(prev => ({ ...prev, [fileType]: cleanedData }));
+          setDataStatus(prev => ({
+            ...prev,
+            [fileType]: { loading: false, loaded: true, count: cleanedData.length, error: null }
+          }));
+        },
+        error: (error) => {
+          setDataStatus(prev => ({
+            ...prev,
+            [fileType]: { loading: false, loaded: false, count: 0, error: error.message }
+          }));
+        }
+      });
+    } catch (err) {
+      setDataStatus(prev => ({
+        ...prev,
+        [fileType]: { loading: false, loaded: false, count: 0, error: err.message }
+      }));
+    }
+  };
+
+  const updateInvestorsList = () => {
+    if (processedData.organizations.length === 0) return;
+
+    const pricingTierOrgIds = new Set(
+      processedData.buyerPricingTiers
+        .map(tier => tier.OrganizationId)
+        .filter(id => id !== null && id !== undefined && id !== '')
+    );
+
+    const investorList = processedData.organizations
+      .filter(org => {
+        if (!org.OrganizationId || !org.DbaName) return false;
+        if (org.Status !== 'Active') return false;
+        
+        const isInPricingTiers = pricingTierOrgIds.has(org.OrganizationId);
+        const hasExchangeBuyer = org.Products && org.Products.toString().includes('ExchangeBuyer');
+        
+        return isInPricingTiers || hasExchangeBuyer;
+      })
+      .map(org => ({
+        id: org.OrganizationId,
+        name: org.DbaName,
+        nmls: org.Nmls,
+        status: org.Status,
+        accountManager: org.AccountManager,
+        subscription: org.Subscription,
+        products: org.Products,
+        isInPricingTiers: pricingTierOrgIds.has(org.OrganizationId),
+        hasExchangeBuyer: org.Products && org.Products.toString().includes('ExchangeBuyer')
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    setInvestors(investorList);
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedInvestors([]);
+    } else {
+      setSelectedInvestors(investors.map(inv => inv.id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  const handleInvestorSelect = (investorId) => {
+    setSelectedInvestors(prev => {
+      if (prev.includes(investorId)) {
+        return prev.filter(id => id !== investorId);
+      } else {
+        return [...prev, investorId];
+      }
+    });
+  };
+
+  useEffect(() => {
+    setSelectAll(selectedInvestors.length === investors.length && investors.length > 0);
+  }, [selectedInvestors, investors]);
+
+  useEffect(() => {
+    if (processedData.organizations.length > 0) {
+      updateInvestorsList();
+    }
+  }, [processedData.organizations, processedData.buyerPricingTiers]);
+
+  const generateReports = () => {
+    if (selectedInvestors.length === 0) {
+      setError('Please select at least one investor');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const reports = selectedInvestors
+        .map(investorId => {
+          const investor = processedData.organizations.find(
+            org => org.OrganizationId === investorId
+          );
+          if (!investor) return null;
+
+          const pricingTiers = processedData.buyerPricingTiers.filter(tier =>
+            tier.OrganizationId === investorId ||
+            (tier.LenderOrganizationIds && 
+             tier.LenderOrganizationIds.toString().split('|').includes(investorId.toString()))
+          );
+
+          const reportData = pricingTiers.map(tier => {
+            const productIds = tier.CompanyProductIds 
+              ? tier.CompanyProductIds.toString().split('|') 
+              : [];
+            const products = productIds.map(id => {
+              const product = processedData.companyProducts.find(
+                p => p.CompanyProductId === parseInt(id.trim())
+              );
+              return product || { 
+                CompanyProductId: id.trim(), 
+                ProductDescription: 'Product not found' 
+              };
+            });
+
+            const lenderOrgIds = tier.LenderOrganizationIds 
+              ? tier.LenderOrganizationIds.toString().split('|') 
+              : [];
+            const lenderOrganizations = lenderOrgIds.map(id => {
+              const lenderOrg = processedData.organizations.find(
+                org => org.OrganizationId === parseInt(id.trim())
+              );
+              return lenderOrg ? {
+                id: lenderOrg.OrganizationId,
+                name: lenderOrg.DbaName,
+                nmls: lenderOrg.Nmls
+              } : {
+                id: id.trim(),
+                name: 'Organization not found',
+                nmls: 'N/A'
+              };
+            });
+
+            const lockPeriods = tier.LockPeriods 
+              ? tier.LockPeriods.toString().split('|') 
+              : [];
+
+            return {
+              ...tier,
+              products: products,
+              lenderOrganizations: lenderOrganizations,
+              lockPeriods: lockPeriods.map(period => period.trim()).filter(period => period)
+            };
+          });
+
+          return {
+            investor: investor,
+            pricingTiers: reportData,
+            summary: {
+              totalPricingTiers: reportData.length,
+              totalProducts: reportData.reduce(
+                (sum, tier) => sum + (tier.products ? tier.products.length : 0), 0
+              ),
+              totalLenderOrganizations: new Set(
+                reportData.flatMap(tier => tier.lenderOrganizations.map(lender => lender.id))
+              ).size,
+              totalLockPeriods: new Set(
+                reportData.flatMap(tier => tier.lockPeriods)
+              ).size,
+              generatedAt: new Date().toISOString()
+            }
+          };
+        })
+        .filter(report => report !== null);
+
+      setGeneratedReports(reports);
+    } catch (err) {
+      setError(`Error generating reports: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportReports = () => {
+    if (generatedReports.length === 0) return;
+
+    const wb = XLSX.utils.book_new();
+
+    // Summary Sheet
+    const summaryData = [
+      ['LoanNEX Investor Reports Summary'],
+      ['Generated At', new Date().toLocaleString()],
+      ['Total Investors', generatedReports.length],
+      ['Total Pricing Tiers', generatedReports.reduce((sum, report) => sum + report.summary.totalPricingTiers, 0)],
+      ['Total Products', generatedReports.reduce((sum, report) => sum + report.summary.totalProducts, 0)],
+      ['Total Lender Organizations', generatedReports.reduce((sum, report) => sum + report.summary.totalLenderOrganizations, 0)],
+      [''],
+      ['Investor Summary'],
+      ['Organization ID', 'Investor Name', 'NMLS', 'Status', 'Account Manager', 'Pricing Tiers', 'Products', 'Lenders', 'Lock Periods']
+    ];
+
+    generatedReports.forEach(report => {
+      summaryData.push([
+        report.investor.OrganizationId,
+        report.investor.DbaName,
+        report.investor.Nmls,
+        report.investor.Status,
+        report.investor.AccountManager,
+        report.summary.totalPricingTiers,
+        report.summary.totalProducts,
+        report.summary.totalLenderOrganizations,
+        report.summary.totalLockPeriods
+      ]);
+    });
+
+    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+    // Pricing Tiers Sheet
+    const pricingTiersData = [
+      [
+        'Investor Name', 'Investor ID', 'Group Name', 'Description', 'Tier Type', 
+        'Margin', 'Price Ceiling', 'Price Floor', 'Lock Periods', 
+        'Lender Organizations Count', 'Products Count', 'Allow Exchange Access', 
+        'Registration Required'
+      ]
+    ];
+
+    generatedReports.forEach(report => {
+      report.pricingTiers.forEach(tier => {
+        pricingTiersData.push([
+          report.investor.DbaName,
+          report.investor.OrganizationId,
+          tier.GroupName,
+          tier.Description,
+          tier.TierType,
+          tier.Margin || '',
+          tier.PriceCeiling || '',
+          tier.PriceFloor || '',
+          tier.lockPeriods.join(', '),
+          tier.lenderOrganizations.length,
+          tier.products.length,
+          tier.AllowAccessToExchange,
+          tier.RegistrationRequired
+        ]);
+      });
+    });
+
+    const pricingTiersWs = XLSX.utils.aoa_to_sheet(pricingTiersData);
+    XLSX.utils.book_append_sheet(wb, pricingTiersWs, 'Pricing Tiers');
+
+    // Lender Organizations Sheet
+    const lenderOrgData = [
+      ['Investor Name', 'Investor ID', 'Pricing Tier Group', 'Lender ID', 'Lender Name', 'Lender NMLS']
+    ];
+
+    generatedReports.forEach(report => {
+      report.pricingTiers.forEach(tier => {
+        tier.lenderOrganizations.forEach(lender => {
+          lenderOrgData.push([
+            report.investor.DbaName,
+            report.investor.OrganizationId,
+            tier.GroupName,
+            lender.id,
+            lender.name,
+            lender.nmls || ''
+          ]);
+        });
+      });
+    });
+
+    const lenderOrgWs = XLSX.utils.aoa_to_sheet(lenderOrgData);
+    XLSX.utils.book_append_sheet(wb, lenderOrgWs, 'Lender Organizations');
+
+    // Products Sheet
+    const productsData = [
+      [
+        'Investor Name', 'Investor ID', 'Pricing Tier Group', 'Product ID', 
+        'Product Description', 'Product Code', 'Is Active', 'Product Type'
+      ]
+    ];
+
+    generatedReports.forEach(report => {
+      report.pricingTiers.forEach(tier => {
+        tier.products.forEach(product => {
+          productsData.push([
+            report.investor.DbaName,
+            report.investor.OrganizationId,
+            tier.GroupName,
+            product.CompanyProductId,
+            product.ProductDescription,
+            product.ProductCode || '',
+            product.IsActive || '',
+            product.ProductType || ''
+          ]);
+        });
+      });
+    });
+
+    const productsWs = XLSX.utils.aoa_to_sheet(productsData);
+    XLSX.utils.book_append_sheet(wb, productsWs, 'Products');
+
+    // Lock Periods Sheet
+    const lockPeriodsData = [
+      ['Investor Name', 'Investor ID', 'Pricing Tier Group', 'Lock Period']
+    ];
+
+    generatedReports.forEach(report => {
+      report.pricingTiers.forEach(tier => {
+        tier.lockPeriods.forEach(period => {
+          lockPeriodsData.push([
+            report.investor.DbaName,
+            report.investor.OrganizationId,
+            tier.GroupName,
+            period
+          ]);
+        });
+      });
+    });
+
+    const lockPeriodsWs = XLSX.utils.aoa_to_sheet(lockPeriodsData);
+    XLSX.utils.book_append_sheet(wb, lockPeriodsWs, 'Lock Periods');
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `LoanNEX_Investor_Reports_${timestamp}.xlsx`;
+
+    // Write and download the file
+    XLSX.writeFile(wb, filename);
+  };
+
+  const allDataLoaded = dataStatus.companyProducts.loaded && 
+                        dataStatus.organizations.loaded && 
+                        dataStatus.buyerPricingTiers.loaded;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-800 to-indigo-900 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <div className="text-2xl font-bold">LoanNEX</div>
+              <div className="h-6 w-px bg-blue-200"></div>
+              <div className="text-sm opacity-90">Investor Report Generator</div>
+            </div>
+            <div className="text-sm opacity-75">Working Smarter Together</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Page Title */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Investor Report Generator</h1>
+          <p className="text-gray-600">
+            Generate comprehensive investor reports with the latest data from LoanNEX
+          </p>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <svg 
+                className="h-5 w-5 text-red-400 mr-2" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                />
+              </svg>
+              <p className="text-red-800">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* File Upload Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Upload Latest Data Files</h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-2">Download files from LoanNEX Intranet:</p>
+                <div className="space-y-2">
+                  <div>
+                    <p className="font-medium">Step 1: Sign in to LoanNEX Intranet</p>
+                    <p className="text-xs mb-1">
+                      Go to: <span className="font-mono bg-blue-100 px-1 rounded">https://intranet.loannex.com/</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Step 2: Download these files:</p>
+                    <ul className="space-y-1 ml-2">
+                      <li>
+                        • Company Products: <span className="font-mono text-xs bg-blue-100 px-1 rounded">Exports &gt; CsvExport?name=CompanyProductsAll&db=0</span>
+                      </li>
+                      <li>
+                        • Organizations: <span className="font-mono text-xs bg-blue-100 px-1 rounded">Exports &gt; CsvExport?name=OrganizationsAll&db=0</span>
+                      </li>
+                      <li>
+                        • Pricing Tiers: <span className="font-mono text-xs bg-blue-100 px-1 rounded">Exports &gt; BuyerPricingTiers</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* File Upload Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {['companyProducts', 'organizations', 'buyerPricingTiers'].map((fileType) => (
+              <div key={fileType} className="relative">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                  <div className="mb-3">
+                    <svg 
+                      className="mx-auto h-10 w-10 text-gray-400" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
+                      />
+                    </svg>
+                  </div>
+                  <label className="cursor-pointer">
+                    <span className="text-sm font-medium text-gray-700 block mb-2">
+                      {fileType === 'companyProducts' && 'Company Products'}
+                      {fileType === 'organizations' && 'Organizations'}
+                      {fileType === 'buyerPricingTiers' && 'Pricing Tiers'}
+                    </span>
+                    <span className="text-xs text-gray-500">Upload CSV file</span>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => handleFileUpload(e, fileType)}
+                      className="hidden"
+                    />
+                  </label>
+                  {dataStatus[fileType].loading && (
+                    <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
+                      <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+                {dataStatus[fileType].loaded && (
+                  <div className="mt-2 text-center">
+                    <div className="flex items-center justify-center text-green-600 text-sm">
+                      <svg 
+                        className="h-4 w-4 mr-1" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M5 13l4 4L19 7" 
+                        />
+                      </svg>
+                      {dataStatus[fileType].count.toLocaleString()} records
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Investor Selection Section */}
+        {allDataLoaded && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">Select Investors</h2>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-600">
+                  {selectedInvestors.length} of {investors.length} selected
+                </span>
+                <button
+                  onClick={handleSelectAll}
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  {selectAll ? 'Deselect All' : 'Select All'}
+                </button>
+                <button
+                  onClick={generateReports}
+                  disabled={selectedInvestors.length === 0 || loading}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition-colors"
+                >
+                  {loading ? 'Generating...' : `Generate Reports (${selectedInvestors.length})`}
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-4">
+                {investors.map(investor => (
+                  <label
+                    key={investor.id}
+                    className="flex items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedInvestors.includes(investor.id)}
+                      onChange={() => handleInvestorSelect(investor.id)}
+                      className="h-4 w-4 text-blue-600 mr-3"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{investor.name}</div>
+                      <div className="text-sm text-gray-500">ID: {investor.id}</div>
+                      <div className="text-xs text-gray-400">{investor.accountManager}</div>
+                      <div className="flex space-x-2 mt-1">
+                        {investor.isInPricingTiers && (
+                          <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                            Pricing Tiers
+                          </span>
+                        )}
+                        {investor.hasExchangeBuyer && (
+                          <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                            Exchange Buyer
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Generated Reports Section */}
+        {generatedReports.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">Generated Reports</h2>
+                <p className="text-gray-600">Reports for {generatedReports.length} investors</p>
+              </div>
+              <button
+                onClick={exportReports}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+              >
+                Export All Reports
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {generatedReports.map((report, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-6">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold text-blue-900">
+                          {report.investor.DbaName}
+                        </h3>
+                        <p className="text-blue-700">
+                          ID: {report.investor.OrganizationId} | NMLS: {report.investor.Nmls}
+                        </p>
+                      </div>
+                      <div className="text-right text-sm text-blue-700">
+                        <div>Status: {report.investor.Status}</div>
+                        <div>Manager: {report.investor.AccountManager}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
+                      <div>
+                        <span className="font-medium text-blue-800">Pricing Tiers:</span>
+                        <p className="text-blue-700">{report.summary.totalPricingTiers}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Products:</span>
+                        <p className="text-blue-700">{report.summary.totalProducts}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Lenders:</span>
+                        <p className="text-blue-700">{report.summary.totalLenderOrganizations}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-blue-800">Lock Periods:</span>
+                        <p className="text-blue-700">{report.summary.totalLockPeriods}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {report.pricingTiers.length > 0 ? (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-800">
+                        Pricing Tiers ({report.pricingTiers.length})
+                      </h4>
+                      {report.pricingTiers.map((tier, tierIndex) => (
+                        <div key={tierIndex} className="bg-gray-50 rounded-lg p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                            <div>
+                              <span className="font-medium text-gray-700">Group:</span>
+                              <p className="text-gray-600">{tier.GroupName}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Type:</span>
+                              <p className="text-gray-600">{tier.TierType}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Margin:</span>
+                              <p className="text-gray-600">{tier.Margin || 'N/A'}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <span className="font-medium text-gray-700">Description:</span>
+                            <p className="text-gray-600">{tier.Description}</p>
+                          </div>
+
+                          {tier.lockPeriods && tier.lockPeriods.length > 0 && (
+                            <div className="mb-3">
+                              <span className="font-medium text-gray-700">Lock Periods:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {tier.lockPeriods.map((period, periodIndex) => (
+                                  <span 
+                                    key={periodIndex} 
+                                    className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800"
+                                  >
+                                    {period}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {tier.lenderOrganizations && tier.lenderOrganizations.length > 0 && (
+                            <div className="mb-3">
+                              <span className="font-medium text-gray-700">
+                                Lenders/Sellers ({tier.lenderOrganizations.length}):
+                              </span>
+                              <div className="mt-2 space-y-1">
+                                {tier.lenderOrganizations.map((lender, lenderIndex) => (
+                                  <div 
+                                    key={lenderIndex} 
+                                    className="text-sm bg-yellow-50 border border-yellow-200 p-2 rounded"
+                                  >
+                                    <span className="font-medium text-yellow-800">#{lender.id}:</span>
+                                    <span className="text-yellow-700 ml-1">{lender.name}</span>
+                                    {lender.nmls && lender.nmls !== 'N/A' && (
+                                      <span className="text-yellow-600 ml-2 text-xs">
+                                        (NMLS: {lender.nmls})
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {tier.products && tier.products.length > 0 && (
+                            <div className="border-t border-gray-200 pt-3">
+                              <span className="font-medium text-gray-700">
+                                Products ({tier.products.length}):
+                              </span>
+                              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {tier.products.slice(0, 4).map((product, pIndex) => (
+                                  <div 
+                                    key={pIndex} 
+                                    className="text-sm bg-white p-2 rounded border"
+                                  >
+                                    <span className="font-medium text-gray-700">
+                                      #{product.CompanyProductId}:
+                                    </span>
+                                    <span className="text-gray-600 ml-1">
+                                      {product.ProductDescription}
+                                    </span>
+                                  </div>
+                                ))}
+                                {tier.products.length > 4 && (
+                                  <div className="text-sm text-gray-500 italic">
+                                    +{tier.products.length - 4} more products...
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No pricing tiers found for this investor</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="bg-gray-800 text-white mt-12">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="text-center">
+            <div className="text-xl font-bold mb-2">LoanNEX</div>
+            <p className="text-gray-300 text-sm">Working Smarter Together</p>
+            <p className="text-gray-400 text-xs mt-2">© 2025 LoanNEX. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoanNEXInvestorReportGenerator;
