@@ -18,7 +18,7 @@
             </div>
             
             <p class="text-gray-600 mb-8">
-                Upload the required files to generate the Client Level Margin (CLM) report
+                Upload the required files to generate the Client Level Margin (CLM) report for DEL and NonDel products
             </p>
 
             <div id="error" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -34,7 +34,7 @@
                         <span id="customerLabel" class="text-sm font-medium text-gray-700 mb-1">
                             Upload PHH Customer Tiers (CSV)
                         </span>
-                        <span class="text-xs text-gray-500">CSV file</span>
+                        <span class="text-xs text-gray-500">CSV file with DEL NonAgency and ND NonAgency columns</span>
                         <input type="file" id="customerFile" accept=".csv" class="hidden">
                     </label>
                 </div>
@@ -45,10 +45,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                         </svg>
                         <span id="adjustorLabel" class="text-sm font-medium text-gray-700 mb-1">
-                            Upload Non-Agency Adjustors Template (Excel or CSV)
+                            Upload Non-Agency Adjustors Template (Excel)
                         </span>
-                        <span class="text-xs text-gray-500">Excel or CSV file</span>
-                        <input type="file" id="adjustorFile" accept=".xlsx,.xls,.csv" class="hidden">
+                        <span class="text-xs text-gray-500">Excel file with NQM DEL INPUT and NQM NONDEL INPUT sheets</span>
+                        <input type="file" id="adjustorFile" accept=".xlsx,.xls" class="hidden">
                     </label>
                 </div>
             </div>
@@ -61,7 +61,7 @@
             </button>
 
             <div id="preview" class="hidden mt-8">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">Preview (First 10 Rows)</h2>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Preview (First 15 Rows)</h2>
                 <div class="overflow-x-auto border rounded-lg">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -76,13 +76,16 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="stats" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-blue-800 text-sm"></p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let customerTiers = null;
-        let adjustorsTemplate = null;
+        let adjustorsWorkbook = null;
 
         function parseCSV(text) {
             const lines = text.split('\n').filter(line => line.trim());
@@ -126,11 +129,43 @@
 
         function checkGenerateButton() {
             const btn = document.getElementById('generateBtn');
-            if (customerTiers && adjustorsTemplate) {
+            if (customerTiers && adjustorsWorkbook) {
                 btn.disabled = false;
                 btn.classList.remove('bg-gray-300', 'cursor-not-allowed');
                 btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'cursor-pointer');
             }
+        }
+
+        function parseMarginSheet(workbook, sheetName) {
+            const sheet = workbook.Sheets[sheetName];
+            if (!sheet) {
+                console.warn(`Sheet "${sheetName}" not found`);
+                return null;
+            }
+            
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            const productData = {};
+            
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (!row || !row[0]) continue;
+                
+                const productCode = String(row[0]).toUpperCase();
+                
+                if (productCode === 'FULLDOC' || productCode === 'ALTDOC' || productCode === 'DSCR') {
+                    // Tier columns: TIER 2 is at index 4, TIER 3 at index 5, etc.
+                    const margins = {};
+                    for (let tier = 2; tier <= 12; tier++) {
+                        const colIdx = tier + 2; // TIER 2 is at index 4
+                        const value = row[colIdx];
+                        margins[tier] = (value !== null && value !== undefined && value !== '') ? parseFloat(value) : 0.0;
+                    }
+                    productData[productCode] = margins;
+                    console.log(`${sheetName} - ${productCode}:`, margins);
+                }
+            }
+            
+            return productData;
         }
 
         document.getElementById('customerFile').addEventListener('change', function(e) {
@@ -142,6 +177,7 @@
                 try {
                     customerTiers = parseCSV(event.target.result);
                     console.log("Loaded customer tiers:", customerTiers.length, "rows");
+                    console.log("Headers:", customerTiers[0]);
                     updateIcon('customerIcon', 'customerLabel', true, '✓ PHH Customer Tiers Uploaded');
                     checkGenerateButton();
                 } catch (err) {
@@ -156,45 +192,38 @@
             if (!file) return;
 
             const reader = new FileReader();
-            
-            if (file.name.endsWith('.csv')) {
-                reader.onload = function(event) {
-                    try {
-                        adjustorsTemplate = parseCSV(event.target.result);
-                        console.log("Loaded adjustors template (CSV):", adjustorsTemplate.length, "rows");
-                        updateIcon('adjustorIcon', 'adjustorLabel', true, '✓ Non-Agency Adjustors Template Uploaded');
-                        checkGenerateButton();
-                    } catch (err) {
-                        showError('Error reading Adjustors Template: ' + err.message);
-                    }
-                };
-                reader.readAsText(file);
-            } else {
-                reader.onload = function(event) {
-                    try {
-                        const data = new Uint8Array(event.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        adjustorsTemplate = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                        console.log("Loaded adjustors template (Excel):", adjustorsTemplate.length, "rows");
-                        updateIcon('adjustorIcon', 'adjustorLabel', true, '✓ Non-Agency Adjustors Template Uploaded');
-                        checkGenerateButton();
-                    } catch (err) {
-                        showError('Error reading Adjustors Template: ' + err.message);
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            }
+            reader.onload = function(event) {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    adjustorsWorkbook = XLSX.read(data, { type: 'array' });
+                    console.log("Loaded workbook with sheets:", adjustorsWorkbook.SheetNames);
+                    updateIcon('adjustorIcon', 'adjustorLabel', true, '✓ Non-Agency Adjustors Template Uploaded');
+                    checkGenerateButton();
+                } catch (err) {
+                    showError('Error reading Adjustors Template: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
         });
 
         document.getElementById('generateBtn').addEventListener('click', function() {
-            if (!customerTiers || !adjustorsTemplate) {
+            if (!customerTiers || !adjustorsWorkbook) {
                 showError('Please upload both files first');
                 return;
             }
 
             try {
-                // Parse Customer Tiers - column 5 is "DEL NonAgency"
+                // Parse margin data from both sheets
+                const delMargins = parseMarginSheet(adjustorsWorkbook, 'NQM DEL INPUT');
+                const nonDelMargins = parseMarginSheet(adjustorsWorkbook, 'NQM NONDEL INPUT');
+
+                if (!delMargins && !nonDelMargins) {
+                    showError('Could not find margin data in the Excel file. Expected sheets: "NQM DEL INPUT" and/or "NQM NONDEL INPUT"');
+                    return;
+                }
+
+                // Parse Customer Tiers
+                // Column indices: 0=Org Name, 1=Org ID, 5=DEL NonAgency, 6=ND NonAgency
                 const customerData = [];
                 for (let i = 1; i < customerTiers.length; i++) {
                     const row = customerTiers[i];
@@ -202,61 +231,82 @@
                         customerData.push({
                             sellerName: row[0],
                             sellerCode: row[1],
-                            tier: row[5] || ''  // DEL NonAgency column (index 5)
+                            delTier: row[5] || '',      // DEL NonAgency column (index 5)
+                            nonDelTier: row[6] || ''    // ND NonAgency column (index 6)
                         });
                     }
                 }
                 console.log("Parsed customers:", customerData.length);
 
-                // Parse Adjustors Template
-                const productData = {};
-                
-                for (let i = 0; i < adjustorsTemplate.length; i++) {
-                    const row = adjustorsTemplate[i];
-                    if (!row || !row[0]) continue;
-                    
-                    const productCode = String(row[0]).toUpperCase();
-                    
-                    if (productCode === 'FULLDOC' || productCode === 'ALTDOC' || productCode === 'DSCR') {
-                        // Find tier columns - columns E through O (indices 4-14) are TIER 2 through TIER 12
-                        const margins = {};
-                        for (let tier = 2; tier <= 12; tier++) {
-                            const colIdx = tier + 2; // TIER 2 is at index 4, TIER 3 at index 5, etc.
-                            const value = row[colIdx];
-                            margins[tier] = (value !== null && value !== undefined && value !== '') ? parseFloat(value) : 0.0;
-                        }
-                        productData[productCode] = margins;
-                        console.log(`Product ${productCode}:`, margins);
-                    }
-                }
-
                 // Generate CLM rows
                 const clmData = [];
-                const productCodes = ['FULLDOC', 'ALTDOC', 'DSCR'];
+                const baseProductCodes = ['FULLDOC', 'ALTDOC', 'DSCR'];
+                
+                let delCount = 0;
+                let nonDelCount = 0;
+                let bothCount = 0;
 
                 customerData.forEach(customer => {
-                    // Extract tier number from Del NonAgency (e.g., "NA3" -> 3)
-                    let tierNum = null;
-                    if (customer.tier) {
-                        const match = String(customer.tier).match(/\d+/);
+                    // Extract DEL tier number (e.g., "NA3" -> 3)
+                    let delTierNum = null;
+                    if (customer.delTier && customer.delTier.toLowerCase() !== 'n/a') {
+                        const match = String(customer.delTier).match(/\d+/);
                         if (match) {
-                            tierNum = parseInt(match[0]);
+                            delTierNum = parseInt(match[0]);
                         }
                     }
 
-                    productCodes.forEach(productCode => {
-                        let margin = 0.0;
-                        if (productData[productCode] && tierNum && productData[productCode][tierNum] !== undefined) {
-                            margin = productData[productCode][tierNum];
+                    // Extract NonDel tier number (e.g., "NA4" -> 4)
+                    let nonDelTierNum = null;
+                    if (customer.nonDelTier && customer.nonDelTier.toLowerCase() !== 'n/a') {
+                        const match = String(customer.nonDelTier).match(/\d+/);
+                        if (match) {
+                            nonDelTierNum = parseInt(match[0]);
                         }
+                    }
 
-                        clmData.push({
-                            'Seller Name': customer.sellerName,
-                            'Seller Code': customer.sellerCode,
-                            'Product Code': productCode,
-                            'Margin': margin.toFixed(2)
+                    // Track statistics
+                    if (delTierNum && nonDelTierNum) {
+                        bothCount++;
+                    } else if (delTierNum) {
+                        delCount++;
+                    } else if (nonDelTierNum) {
+                        nonDelCount++;
+                    }
+
+                    // Generate DEL product rows if customer has DEL tier
+                    if (delTierNum && delMargins) {
+                        baseProductCodes.forEach(baseCode => {
+                            let margin = 0.0;
+                            if (delMargins[baseCode] && delMargins[baseCode][delTierNum] !== undefined) {
+                                margin = delMargins[baseCode][delTierNum];
+                            }
+
+                            clmData.push({
+                                'Seller Name': customer.sellerName,
+                                'Seller Code': customer.sellerCode,
+                                'Product Code': baseCode + ' DEL',
+                                'Margin': margin.toFixed(2)
+                            });
                         });
-                    });
+                    }
+
+                    // Generate NonDel product rows if customer has NonDel tier
+                    if (nonDelTierNum && nonDelMargins) {
+                        baseProductCodes.forEach(baseCode => {
+                            let margin = 0.0;
+                            if (nonDelMargins[baseCode] && nonDelMargins[baseCode][nonDelTierNum] !== undefined) {
+                                margin = nonDelMargins[baseCode][nonDelTierNum];
+                            }
+
+                            clmData.push({
+                                'Seller Name': customer.sellerName,
+                                'Seller Code': customer.sellerCode,
+                                'Product Code': baseCode + ' ND',
+                                'Margin': margin.toFixed(2)
+                            });
+                        });
+                    }
                 });
 
                 console.log("Generated CLM rows:", clmData.length);
@@ -264,18 +314,31 @@
                 // Show preview
                 const previewBody = document.getElementById('previewBody');
                 previewBody.innerHTML = '';
-                clmData.slice(0, 10).forEach(row => {
+                clmData.slice(0, 15).forEach(row => {
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-gray-50';
+                    const isND = row['Product Code'].includes('ND');
+                    const badgeColor = isND ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
                     tr.innerHTML = `
                         <td class="px-4 py-3 text-sm text-gray-900">${row['Seller Name']}</td>
                         <td class="px-4 py-3 text-sm text-gray-900">${row['Seller Code']}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">${row['Product Code']}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${badgeColor}">${row['Product Code']}</span>
+                        </td>
                         <td class="px-4 py-3 text-sm text-gray-900 font-medium">${row['Margin']}</td>
                     `;
                     previewBody.appendChild(tr);
                 });
                 document.getElementById('preview').classList.remove('hidden');
+
+                // Show stats
+                const statsDiv = document.getElementById('stats');
+                statsDiv.querySelector('p').innerHTML = `
+                    <strong>Summary:</strong> ${clmData.length} total rows generated<br>
+                    <span class="text-xs">
+                        DEL only: ${delCount} sellers | NonDel only: ${nonDelCount} sellers | Both: ${bothCount} sellers
+                    </span>
+                `;
 
                 // Generate CSV content
                 const now = new Date();
@@ -306,8 +369,11 @@
                 URL.revokeObjectURL(url);
 
                 // Show success message
+                const existingSuccess = document.querySelector('.success-msg');
+                if (existingSuccess) existingSuccess.remove();
+                
                 const successMsg = document.createElement('div');
-                successMsg.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+                successMsg.className = 'success-msg mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
                 successMsg.innerHTML = `
                     <p class="text-green-800 font-medium">✓ CLM file generated successfully!</p>
                     <p class="text-green-700 text-sm mt-1">File: ${filename} (${clmData.length} rows)</p>
