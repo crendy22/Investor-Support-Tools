@@ -6,6 +6,8 @@
     <title>Lock Data Analytics Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -33,6 +35,11 @@
             margin-bottom: 30px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             animation: slideDown 0.5s ease-out;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
         @keyframes slideDown {
@@ -46,7 +53,7 @@
             }
         }
 
-        h1 {
+        .header-left h1 {
             color: #333;
             font-size: 2.5em;
             margin-bottom: 10px;
@@ -58,6 +65,12 @@
         .subtitle {
             color: #666;
             font-size: 1.1em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .upload-section {
@@ -307,102 +320,21 @@
             letter-spacing: 0.5px;
         }
 
-        .multi-select-container {
-            position: relative;
-        }
-
-        .multi-select-display {
+        .filter-select {
             width: 100%;
             padding: 10px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             background: white;
-            cursor: pointer;
+            font-size: 0.95em;
             transition: all 0.3s ease;
-            min-height: 42px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            align-items: center;
+            cursor: pointer;
         }
 
-        .multi-select-display:hover {
+        .filter-select:focus {
+            outline: none;
             border-color: #4ECDC4;
-        }
-
-        .multi-select-dropdown {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid #4ECDC4;
-            border-radius: 10px;
-            margin-top: 5px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .multi-select-dropdown.show {
-            display: block;
-            animation: dropDown 0.2s ease-out;
-        }
-
-        @keyframes dropDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .multi-select-option {
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .multi-select-option:hover {
-            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(68, 160, 141, 0.1) 100%);
-        }
-
-        .multi-select-option.selected {
-            background: linear-gradient(135deg, rgba(78, 205, 196, 0.2) 0%, rgba(68, 160, 141, 0.2) 100%);
-        }
-
-        .multi-select-option input[type="checkbox"] {
-            accent-color: #4ECDC4;
-        }
-
-        .selected-tag {
-            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
-            color: white;
-            padding: 3px 10px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .selected-tag .remove {
-            cursor: pointer;
-            font-weight: bold;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-
-        .selected-tag .remove:hover {
-            opacity: 1;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
         }
 
         .range-input-group {
@@ -479,6 +411,23 @@
         .btn-success:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(67, 233, 123, 0.4);
+        }
+
+        .btn-pdf {
+            background: linear-gradient(135deg, #FF6B6B 0%, #ee5a5a 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
         .data-table-section {
@@ -567,6 +516,10 @@
             position: relative;
         }
 
+        .chart-container.tall {
+            height: 450px;
+        }
+
         .chart-title {
             color: #333;
             font-size: 1.3em;
@@ -586,12 +539,78 @@
         }
 
         .date-info {
-            background: rgba(78, 205, 196, 0.1);
-            padding: 10px 15px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 15px;
             margin-bottom: 20px;
             color: #333;
             text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+        }
+
+        .date-info span {
+            color: #44A08D;
+            font-weight: 600;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #4ECDC4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            color: #333;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .section-title {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title h2 {
+            color: #333;
+            font-size: 1.5em;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            border-radius: 2px;
         }
 
         @media (max-width: 768px) {
@@ -607,7 +626,12 @@
                 grid-template-columns: 1fr;
             }
 
-            h1 {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-left h1 {
                 font-size: 1.8em;
             }
 
@@ -615,13 +639,31 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .chart-container {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔒 Lock Data Analytics Dashboard</h1>
-            <p class="subtitle">Upload multiple monthly lock reports to analyze and slice data across multiple dimensions</p>
+            <div class="header-left">
+                <h1>🔒 Lock Data Analytics Dashboard</h1>
+                <p class="subtitle">Upload monthly lock reports to analyze and slice data across multiple dimensions</p>
+            </div>
+            <div class="header-actions hidden" id="headerActions">
+                <button class="btn btn-pdf" onclick="exportToPDF()">📄 Export Charts to PDF</button>
+                <button class="btn btn-secondary" onclick="resetDashboard()">🔄 New Analysis</button>
+            </div>
         </div>
 
         <div class="upload-section" id="uploadSection">
@@ -646,9 +688,9 @@
                     <div class="feature-desc">Identify patterns in rates, loan amounts, and LTV ratios across time periods</div>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-icon">🎯</div>
-                    <div class="feature-title">Smart Filtering</div>
-                    <div class="feature-desc">Slice data by 17+ dimensions including investor, product, state, and date ranges</div>
+                    <div class="feature-icon">🏢</div>
+                    <div class="feature-title">Seller Tracking</div>
+                    <div class="feature-desc">Track unique seller activity month-over-month</div>
                 </div>
                 <div class="feature-item">
                     <div class="feature-icon">🗺️</div>
@@ -658,12 +700,12 @@
                 <div class="feature-item">
                     <div class="feature-icon">💰</div>
                     <div class="feature-title">Performance Metrics</div>
-                    <div class="feature-desc">Track purchase vs refinance trends, first-time buyer percentages, and more</div>
+                    <div class="feature-desc">Track purchase vs refinance trends, program breakdown, and more</div>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-icon">📊</div>
-                    <div class="feature-title">Export Reports</div>
-                    <div class="feature-desc">Download filtered data to Excel for further analysis and sharing</div>
+                    <div class="feature-icon">📄</div>
+                    <div class="feature-title">PDF Export</div>
+                    <div class="feature-desc">Export all charts to a professional PDF report</div>
                 </div>
             </div>
 
@@ -681,24 +723,44 @@
         </div>
 
         <div id="filtersSection" class="filters-section hidden">
-            <h2 style="margin-bottom: 20px; color: #333;">Filter Data</h2>
+            <h2 style="margin-bottom: 20px; color: #333;">🎯 Filter Data</h2>
             <div class="filter-grid" id="filterGrid"></div>
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
                 <button class="btn btn-secondary" onclick="resetFilters()">Reset All</button>
-                <button class="btn btn-secondary" onclick="exportFilteredData()">Export to Excel</button>
+                <button class="btn btn-secondary" onclick="exportFilteredData()">📥 Export to Excel</button>
             </div>
         </div>
 
-        <div id="chartsSection" class="charts-section hidden"></div>
+        <div id="chartsContainer" class="hidden">
+            <div class="section-title">
+                <h2>Monthly Trends</h2>
+            </div>
+            <div class="charts-section" id="trendChartsSection"></div>
+
+            <div class="section-title">
+                <h2>Distribution Analysis</h2>
+            </div>
+            <div class="charts-section" id="distributionChartsSection"></div>
+
+            <div class="section-title">
+                <h2>Geographic & Rate Analysis</h2>
+            </div>
+            <div class="charts-section" id="geoChartsSection"></div>
+        </div>
 
         <div id="tableSection" class="data-table-section hidden">
             <div class="summary-info">
-                <h3>Filtered Results Summary</h3>
+                <h3>📊 Filtered Results Summary</h3>
                 <div class="summary-stats" id="summaryStats"></div>
             </div>
             <div id="tableContainer"></div>
         </div>
+    </div>
+
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Processing files...</div>
     </div>
 
     <script>
@@ -709,10 +771,34 @@
         let activeFilters = {};
         let uploadedFiles = [];
 
+        // Column mappings - adjust these if column names differ
+        const COLUMNS = {
+            seller: 'Originator Dba Name',
+            lockDate: 'Lock Approved Date',
+            purpose: 'Purpose',
+            program: 'Program',
+            loanType: 'Loan Type',
+            state: 'State',
+            rate: 'Final Rate',
+            loanAmount: 'LoanAmount',
+            ltv: 'LTV',
+            lockId: 'NexId',
+            mortgageProduct: 'MortgageProduct'
+        };
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard initialized successfully');
         });
+
+        function showLoading(text = 'Processing...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
 
         function handleDragOver(e) {
             e.preventDefault();
@@ -768,13 +854,13 @@
             
             let html = '';
             uploadedFiles.forEach((file, index) => {
-                html += '<div class="file-item">' +
-                    '<div>' +
-                    '<div class="file-name">' + file.name + '</div>' +
-                    '<div class="file-info">' + (file.size / 1024).toFixed(1) + ' KB</div>' +
-                    '</div>' +
-                    '<span class="file-remove" onclick="removeFile(' + index + ')">×</span>' +
-                    '</div>';
+                html += `<div class="file-item">
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-info">${(file.size / 1024).toFixed(1)} KB</div>
+                    </div>
+                    <span class="file-remove" onclick="removeFile(${index})">×</span>
+                </div>`;
             });
             fileList.innerHTML = html;
         }
@@ -795,6 +881,7 @@
                 return;
             }
 
+            showLoading('Processing files...');
             rawData = [];
             let processedCount = 0;
 
@@ -803,10 +890,10 @@
                 reader.onload = function(e) {
                     try {
                         const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
+                        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                         const sheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[sheetName];
-                        const fileData = XLSX.utils.sheet_to_json(worksheet);
+                        const fileData = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' });
                         
                         if (fileData.length > 0) {
                             rawData = rawData.concat(fileData);
@@ -817,6 +904,7 @@
                             onAllFilesProcessed();
                         }
                     } catch (error) {
+                        console.error('Error reading file:', error);
                         alert('Error reading file: ' + error.message);
                         processedCount++;
                         if (processedCount === uploadedFiles.length) {
@@ -830,49 +918,68 @@
 
         function onAllFilesProcessed() {
             if (rawData.length === 0) {
+                hideLoading();
                 alert('No data found in the uploaded files');
                 return;
             }
 
             processData();
             document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('headerActions').classList.remove('hidden');
+            hideLoading();
         }
 
         function processData() {
             filteredData = [...rawData];
             
+            displayDateRange();
             displayInitialStats();
             setupFilters();
-            displayCharts();
+            displayAllCharts();
             displayTable();
             
             // Show all sections
             document.getElementById('statsSection').classList.remove('hidden');
             document.getElementById('filtersSection').classList.remove('hidden');
-            document.getElementById('chartsSection').classList.remove('hidden');
+            document.getElementById('chartsContainer').classList.remove('hidden');
             document.getElementById('tableSection').classList.remove('hidden');
+        }
+
+        function displayDateRange() {
+            const dateInfo = document.getElementById('dateInfo');
+            const dates = filteredData
+                .map(row => parseDate(row[COLUMNS.lockDate]))
+                .filter(d => d !== null)
+                .sort((a, b) => a - b);
+            
+            if (dates.length > 0) {
+                const minDate = dates[0];
+                const maxDate = dates[dates.length - 1];
+                dateInfo.innerHTML = `📅 Data Range: <span>${formatDate(minDate)}</span> to <span>${formatDate(maxDate)}</span> | <span>${filteredData.length.toLocaleString()}</span> total locks`;
+                dateInfo.classList.remove('hidden');
+            }
         }
 
         function displayInitialStats() {
             const statsGrid = document.getElementById('statsGrid');
-            const stats = calculateStats(rawData);
+            const stats = calculateStats(filteredData);
             
-            let html = '';
             const statCards = [
                 { label: 'Total Locks', value: stats.totalLocks.toLocaleString(), detail: 'Total records' },
+                { label: 'Unique Sellers', value: stats.uniqueSellers.toLocaleString(), detail: 'Active originators' },
                 { label: 'Purchase', value: stats.purchasePercent + '%', detail: stats.purchaseCount.toLocaleString() + ' locks' },
                 { label: 'Refinance', value: stats.refiPercent + '%', detail: stats.refiCount.toLocaleString() + ' locks' },
                 { label: 'Avg Rate', value: stats.avgRate + '%', detail: 'Interest rate' },
-                { label: 'Avg Loan', value: '$' + stats.avgLoanAmount, detail: 'Loan amount' },
-                { label: 'Avg LTV', value: stats.avgLTV + '%', detail: 'Loan to value' }
+                { label: 'Avg Loan', value: '$' + stats.avgLoanAmount, detail: 'Loan amount' }
             ];
             
+            let html = '';
             statCards.forEach(stat => {
-                html += '<div class="stat-card">' +
-                    '<div class="stat-label">' + stat.label + '</div>' +
-                    '<div class="stat-value">' + stat.value + '</div>' +
-                    '<div class="stat-detail">' + stat.detail + '</div>' +
-                    '</div>';
+                html += `<div class="stat-card">
+                    <div class="stat-label">${stat.label}</div>
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-detail">${stat.detail}</div>
+                </div>`;
             });
             
             statsGrid.innerHTML = html;
@@ -881,6 +988,7 @@
         function calculateStats(data) {
             const stats = {
                 totalLocks: data.length,
+                uniqueSellers: new Set(data.map(row => row[COLUMNS.seller]).filter(Boolean)).size,
                 purchaseCount: 0,
                 refiCount: 0,
                 rates: [],
@@ -889,12 +997,13 @@
             };
 
             data.forEach(row => {
-                if (row.Purpose === 'Purchase') stats.purchaseCount++;
-                else if (row.Purpose === 'CashOutRefinance' || row.Purpose === 'NoCashOutRefinance') stats.refiCount++;
+                const purpose = row[COLUMNS.purpose];
+                if (purpose === 'Purchase') stats.purchaseCount++;
+                else if (purpose === 'CashOutRefinance' || purpose === 'NoCashOutRefinance') stats.refiCount++;
 
-                const rate = parseFloat(row['Final Rate'] || row.Rate);
-                const loanAmount = parseFloat(row.LoanAmount);
-                const ltv = parseFloat(row.LTV);
+                const rate = parseFloat(row[COLUMNS.rate]);
+                const loanAmount = parseFloat(row[COLUMNS.loanAmount]);
+                const ltv = parseFloat(row[COLUMNS.ltv]);
 
                 if (!isNaN(rate)) stats.rates.push(rate);
                 if (!isNaN(loanAmount)) stats.loanAmounts.push(loanAmount);
@@ -912,15 +1021,63 @@
         }
 
         function setupFilters() {
-            // Simplified filter setup - will be populated after data is loaded
             const filterGrid = document.getElementById('filterGrid');
-            filterGrid.innerHTML = '<p style="color: #666;">Filters will appear here after data is loaded</p>';
+            
+            // Get unique values for each filter dimension
+            const purposes = [...new Set(filteredData.map(r => r[COLUMNS.purpose]).filter(Boolean))].sort();
+            const programs = [...new Set(filteredData.map(r => r[COLUMNS.program]).filter(Boolean))].sort();
+            const loanTypes = [...new Set(filteredData.map(r => r[COLUMNS.loanType]).filter(Boolean))].sort();
+            const states = [...new Set(filteredData.map(r => r[COLUMNS.state]).filter(Boolean))].sort();
+            const sellers = [...new Set(filteredData.map(r => r[COLUMNS.seller]).filter(Boolean))].sort();
+
+            filterGrid.innerHTML = `
+                <div class="filter-group">
+                    <label class="filter-label">Purpose</label>
+                    <select class="filter-select" id="filterPurpose">
+                        <option value="">All Purposes</option>
+                        ${purposes.map(p => `<option value="${p}">${p}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Program</label>
+                    <select class="filter-select" id="filterProgram">
+                        <option value="">All Programs</option>
+                        ${programs.map(p => `<option value="${p}">${p}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Loan Type</label>
+                    <select class="filter-select" id="filterLoanType">
+                        <option value="">All Loan Types</option>
+                        ${loanTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">State</label>
+                    <select class="filter-select" id="filterState">
+                        <option value="">All States</option>
+                        ${states.map(s => `<option value="${s}">${s}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Seller</label>
+                    <select class="filter-select" id="filterSeller">
+                        <option value="">All Sellers</option>
+                        ${sellers.map(s => `<option value="${s}">${s}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Date Range</label>
+                    <div class="range-input-group">
+                        <input type="date" class="date-input" id="filterDateFrom" placeholder="From">
+                        <span>to</span>
+                        <input type="date" class="date-input" id="filterDateTo" placeholder="To">
+                    </div>
+                </div>
+            `;
         }
 
-        function displayCharts() {
-            const chartsSection = document.getElementById('chartsSection');
-            chartsSection.innerHTML = '';
-
+        function displayAllCharts() {
             // Destroy existing charts
             Object.values(charts).forEach(chart => {
                 if (chart && typeof chart.destroy === 'function') {
@@ -929,16 +1086,182 @@
             });
             charts = {};
 
-            // Fixed vs ARM Monthly Trend Chart
-            const fixedArmContainer = createChartContainer('Fixed vs ARM Locks - Monthly Trend');
-            chartsSection.appendChild(fixedArmContainer);
-            const fixedArmCanvas = fixedArmContainer.querySelector('canvas');
-            const fixedArmCtx = fixedArmCanvas.getContext('2d');
+            const trendSection = document.getElementById('trendChartsSection');
+            const distributionSection = document.getElementById('distributionChartsSection');
+            const geoSection = document.getElementById('geoChartsSection');
+
+            trendSection.innerHTML = '';
+            distributionSection.innerHTML = '';
+            geoSection.innerHTML = '';
+
+            // --- TREND CHARTS ---
+
+            // 1. Unique Sellers Per Month Chart
+            const sellersContainer = createChartContainer('Unique Sellers Per Month', 'sellersChart');
+            trendSection.appendChild(sellersContainer);
+            createUniqueSellersChart();
+
+            // 2. Locks Per Month Chart
+            const locksContainer = createChartContainer('Total Locks Per Month', 'locksChart');
+            trendSection.appendChild(locksContainer);
+            createLocksPerMonthChart();
+
+            // 3. Fixed vs ARM Monthly Trend
+            const fixedArmContainer = createChartContainer('Fixed vs ARM Locks - Monthly Trend', 'fixedArmChart');
+            trendSection.appendChild(fixedArmContainer);
+            createFixedArmChart();
+
+            // --- DISTRIBUTION CHARTS ---
+
+            // 4. Loan Purpose Breakdown
+            const purposeContainer = createChartContainer('Loan Purpose Breakdown', 'purposeChart');
+            distributionSection.appendChild(purposeContainer);
+            createPurposeChart();
+
+            // 5. Program Breakdown
+            const programContainer = createChartContainer('Program Breakdown', 'programChart');
+            distributionSection.appendChild(programContainer);
+            createProgramChart();
+
+            // 6. Loan Type Breakdown
+            const loanTypeContainer = createChartContainer('Loan Type Breakdown', 'loanTypeChart');
+            distributionSection.appendChild(loanTypeContainer);
+            createLoanTypeChart();
+
+            // --- GEO & RATE CHARTS ---
+
+            // 7. Top States Chart
+            const stateContainer = createChartContainer('Top 10 States by Lock Volume', 'stateChart');
+            geoSection.appendChild(stateContainer);
+            createStateChart();
+
+            // 8. Rate Distribution Chart
+            const rateContainer = createChartContainer('Interest Rate Distribution', 'rateChart');
+            geoSection.appendChild(rateContainer);
+            createRateChart();
+        }
+
+        function createChartContainer(title, chartId) {
+            const container = document.createElement('div');
+            container.className = 'chart-container';
+            container.id = chartId + 'Container';
+            container.innerHTML = `<h3 class="chart-title">${title}</h3><div class="chart-wrapper"><canvas id="${chartId}"></canvas></div>`;
+            return container;
+        }
+
+        // Chart creation functions
+        function createUniqueSellersChart() {
+            const ctx = document.getElementById('sellersChart').getContext('2d');
+            const monthlyData = processSellersPerMonth(filteredData);
             
-            // Process Fixed vs ARM data by month
+            charts.sellers = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: [{
+                        label: 'Unique Sellers',
+                        data: monthlyData.counts,
+                        backgroundColor: 'rgba(78, 205, 196, 0.7)',
+                        borderColor: '#4ECDC4',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    return monthlyData.sellerNames[context.dataIndex].slice(0, 5).join(', ') + 
+                                           (monthlyData.sellerNames[context.dataIndex].length > 5 ? '...' : '');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Unique Sellers',
+                                font: { weight: 'bold' }
+                            },
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createLocksPerMonthChart() {
+            const ctx = document.getElementById('locksChart').getContext('2d');
+            const monthlyData = processLocksPerMonth(filteredData);
+            
+            charts.locks = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: [{
+                        label: 'Total Locks',
+                        data: monthlyData.counts,
+                        backgroundColor: 'rgba(68, 160, 141, 0.2)',
+                        borderColor: '#44A08D',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#44A08D'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Locks',
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createFixedArmChart() {
+            const ctx = document.getElementById('fixedArmChart').getContext('2d');
             const monthlyData = processFixedArmByMonth(filteredData);
             
-            charts.fixedArm = new Chart(fixedArmCtx, {
+            charts.fixedArm = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: monthlyData.labels,
@@ -946,16 +1269,18 @@
                         {
                             label: 'Fixed Rate',
                             data: monthlyData.fixed,
-                            backgroundColor: '#4ECDC4',
-                            borderColor: '#44A08D',
-                            borderWidth: 1
+                            backgroundColor: 'rgba(78, 205, 196, 0.8)',
+                            borderColor: '#4ECDC4',
+                            borderWidth: 1,
+                            borderRadius: 4
                         },
                         {
                             label: 'ARM',
                             data: monthlyData.arm,
-                            backgroundColor: '#44A08D',
-                            borderColor: '#4ECDC4',
-                            borderWidth: 1
+                            backgroundColor: 'rgba(68, 160, 141, 0.8)',
+                            borderColor: '#44A08D',
+                            borderWidth: 1,
+                            borderRadius: 4
                         }
                     ]
                 },
@@ -963,47 +1288,28 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: {
-                            stacked: false
-                        },
+                        x: { stacked: false },
                         y: {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Number of Locks'
+                                text: 'Number of Locks',
+                                font: { weight: 'bold' }
                             }
                         }
                     },
                     plugins: {
-                        legend: {
-                            position: 'top'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                afterLabel: function(context) {
-                                    const total = monthlyData.fixed[context.dataIndex] + monthlyData.arm[context.dataIndex];
-                                    const percentage = ((context.parsed.y / total) * 100).toFixed(1);
-                                    return percentage + '% of total';
-                                }
-                            }
-                        }
+                        legend: { position: 'top' }
                     }
                 }
             });
+        }
 
-            // Purpose Distribution Chart
-            const purposeContainer = createChartContainer('Purpose Distribution');
-            chartsSection.appendChild(purposeContainer);
-            const purposeCanvas = purposeContainer.querySelector('canvas');
-            const purposeCtx = purposeCanvas.getContext('2d');
+        function createPurposeChart() {
+            const ctx = document.getElementById('purposeChart').getContext('2d');
+            const purposeCounts = getValueCounts(filteredData, COLUMNS.purpose);
             
-            const purposeCounts = {};
-            filteredData.forEach(row => {
-                const purpose = row.Purpose || 'Unknown';
-                purposeCounts[purpose] = (purposeCounts[purpose] || 0) + 1;
-            });
-
-            charts.purpose = new Chart(purposeCtx, {
+            charts.purpose = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(purposeCounts),
@@ -1015,7 +1321,9 @@
                             '#43e97b',
                             '#38f9d7',
                             '#4facfe'
-                        ]
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
                     }]
                 },
                 options: {
@@ -1024,66 +1332,119 @@
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: {
-                                padding: 10,
-                                font: {
-                                    size: 11
+                            labels: { padding: 15, font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed.toLocaleString()} (${percentage}%)`;
                                 }
                             }
                         }
                     }
                 }
             });
+        }
 
-            // Rate Distribution Chart
-            const rateContainer = createChartContainer('Rate Distribution');
-            chartsSection.appendChild(rateContainer);
-            const rateCanvas = rateContainer.querySelector('canvas');
-            const rateCtx = rateCanvas.getContext('2d');
+        function createProgramChart() {
+            const ctx = document.getElementById('programChart').getContext('2d');
+            const programCounts = getValueCounts(filteredData, COLUMNS.program);
             
-            const rates = filteredData.map(row => parseFloat(row['Final Rate'] || row['Note Rate'])).filter(r => !isNaN(r));
-            const rateBins = createHistogramBins(rates, 10);
+            // Sort by count and take top entries
+            const sorted = Object.entries(programCounts).sort((a, b) => b[1] - a[1]);
             
-            charts.rate = new Chart(rateCtx, {
+            charts.program = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: rateBins.labels,
+                    labels: sorted.map(s => truncateLabel(s[0], 25)),
                     datasets: [{
                         label: 'Number of Locks',
-                        data: rateBins.counts,
-                        backgroundColor: 'rgba(78, 205, 196, 0.7)',
-                        borderColor: '#4ECDC4',
-                        borderWidth: 1
+                        data: sorted.map(s => s[1]),
+                        backgroundColor: generateGradientColors(sorted.length),
+                        borderColor: '#44A08D',
+                        borderWidth: 1,
+                        borderRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return sorted[context[0].dataIndex][0];
+                                }
+                            }
+                        }
+                    },
                     scales: {
-                        y: {
-                            beginAtZero: true
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Locks',
+                                font: { weight: 'bold' }
+                            }
                         }
                     }
                 }
             });
+        }
 
-            // Top States Chart
-            const stateContainer = createChartContainer('Top 10 States');
-            chartsSection.appendChild(stateContainer);
-            const stateCanvas = stateContainer.querySelector('canvas');
-            const stateCtx = stateCanvas.getContext('2d');
+        function createLoanTypeChart() {
+            const ctx = document.getElementById('loanTypeChart').getContext('2d');
+            const loanTypeCounts = getValueCounts(filteredData, COLUMNS.loanType);
             
-            const stateCounts = {};
-            filteredData.forEach(row => {
-                const state = row.State || row['Property State'] || 'Unknown';
-                stateCounts[state] = (stateCounts[state] || 0) + 1;
+            charts.loanType = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(loanTypeCounts),
+                    datasets: [{
+                        data: Object.values(loanTypeCounts),
+                        backgroundColor: [
+                            '#4ECDC4',
+                            '#FF6B6B',
+                            '#43e97b',
+                            '#4facfe',
+                            '#f093fb'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 15, font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
             });
+        }
+
+        function createStateChart() {
+            const ctx = document.getElementById('stateChart').getContext('2d');
+            const stateCounts = getValueCounts(filteredData, COLUMNS.state);
+            const topStates = Object.entries(stateCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
             
-            const topStates = Object.entries(stateCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 10);
-            
-            charts.state = new Chart(stateCtx, {
+            charts.state = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: topStates.map(s => s[0]),
@@ -1092,53 +1453,140 @@
                         data: topStates.map(s => s[1]),
                         backgroundColor: 'rgba(68, 160, 141, 0.7)',
                         borderColor: '#44A08D',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        borderRadius: 8
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Locks',
+                                font: { weight: 'bold' }
+                            }
                         }
                     }
                 }
             });
         }
 
-        function processFixedArmByMonth(data) {
-            const monthlyStats = {};
-            const today = new Date();
+        function createRateChart() {
+            const ctx = document.getElementById('rateChart').getContext('2d');
+            const rates = filteredData.map(row => parseFloat(row[COLUMNS.rate])).filter(r => !isNaN(r));
+            const rateBins = createHistogramBins(rates, 12);
             
-            // Initialize last 12 months
-            for (let i = 11; i >= 0; i--) {
-                const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-                const key = formatMonthYear(date);
-                monthlyStats[key] = { fixed: 0, arm: 0, total: 0 };
-            }
-            
-            // Process data
-            data.forEach(row => {
-                // Get date from appropriate column
-                let lockDate = null;
-                
-                // Try different date columns
-                const dateFields = ['Lock Date', 'Lock Requested', 'Last Request Date', 'Created Date', 'Date'];
-                for (let field of dateFields) {
-                    if (row[field]) {
-                        lockDate = parseDate(row[field]);
-                        if (lockDate) break;
+            charts.rate = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: rateBins.labels,
+                    datasets: [{
+                        label: 'Number of Locks',
+                        data: rateBins.counts,
+                        backgroundColor: 'rgba(78, 205, 196, 0.7)',
+                        borderColor: '#4ECDC4',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Locks',
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Interest Rate (%)',
+                                font: { weight: 'bold' }
+                            }
+                        }
                     }
                 }
-                
+            });
+        }
+
+        // Data processing functions
+        function processSellersPerMonth(data) {
+            const monthlyData = {};
+            
+            data.forEach(row => {
+                const lockDate = parseDate(row[COLUMNS.lockDate]);
                 if (!lockDate) return;
                 
                 const monthKey = formatMonthYear(lockDate);
-                if (!monthlyStats[monthKey]) return;
+                const seller = row[COLUMNS.seller];
                 
-                // Check if Fixed or ARM
-                const productType = row['Product Type'] || row['Mortgage Product'] || row['MortgageProduct'] || row['Product'] || '';
+                if (!seller) return;
+                
+                if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = new Set();
+                }
+                monthlyData[monthKey].add(seller);
+            });
+            
+            // Sort by date
+            const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
+                return parseMonthYear(a) - parseMonthYear(b);
+            });
+            
+            return {
+                labels: sortedMonths,
+                counts: sortedMonths.map(m => monthlyData[m].size),
+                sellerNames: sortedMonths.map(m => Array.from(monthlyData[m]))
+            };
+        }
+
+        function processLocksPerMonth(data) {
+            const monthlyData = {};
+            
+            data.forEach(row => {
+                const lockDate = parseDate(row[COLUMNS.lockDate]);
+                if (!lockDate) return;
+                
+                const monthKey = formatMonthYear(lockDate);
+                monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+            });
+            
+            const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
+                return parseMonthYear(a) - parseMonthYear(b);
+            });
+            
+            return {
+                labels: sortedMonths,
+                counts: sortedMonths.map(m => monthlyData[m])
+            };
+        }
+
+        function processFixedArmByMonth(data) {
+            const monthlyStats = {};
+            
+            data.forEach(row => {
+                const lockDate = parseDate(row[COLUMNS.lockDate]);
+                if (!lockDate) return;
+                
+                const monthKey = formatMonthYear(lockDate);
+                if (!monthlyStats[monthKey]) {
+                    monthlyStats[monthKey] = { fixed: 0, arm: 0 };
+                }
+                
+                const productType = row[COLUMNS.mortgageProduct] || '';
                 const isARM = productType.toString().toUpperCase().includes('ARM') || 
                               productType.toString().includes('/') ||
                               productType.toString().toUpperCase().includes('ADJUSTABLE');
@@ -1148,32 +1596,40 @@
                 } else {
                     monthlyStats[monthKey].fixed++;
                 }
-                monthlyStats[monthKey].total++;
             });
             
-            // Format for Chart.js
-            const labels = Object.keys(monthlyStats);
-            const fixed = labels.map(label => monthlyStats[label].fixed);
-            const arm = labels.map(label => monthlyStats[label].arm);
+            const sortedMonths = Object.keys(monthlyStats).sort((a, b) => {
+                return parseMonthYear(a) - parseMonthYear(b);
+            });
             
-            return { labels, fixed, arm };
+            return {
+                labels: sortedMonths,
+                fixed: sortedMonths.map(m => monthlyStats[m].fixed),
+                arm: sortedMonths.map(m => monthlyStats[m].arm)
+            };
         }
 
+        function getValueCounts(data, column) {
+            const counts = {};
+            data.forEach(row => {
+                const value = row[column] || 'Unknown';
+                counts[value] = (counts[value] || 0) + 1;
+            });
+            return counts;
+        }
+
+        // Utility functions
         function parseDate(dateValue) {
             if (!dateValue) return null;
             
-            // Handle Excel serial date
-            if (typeof dateValue === 'number' && dateValue > 25000 && dateValue < 50000) {
-                // Excel date serial number
-                return new Date((dateValue - 25569) * 86400 * 1000);
-            }
-            
-            // Handle date object
             if (dateValue instanceof Date) {
                 return dateValue;
             }
             
-            // Handle string date
+            if (typeof dateValue === 'number' && dateValue > 25000 && dateValue < 50000) {
+                return new Date((dateValue - 25569) * 86400 * 1000);
+            }
+            
             const parsed = new Date(dateValue);
             if (!isNaN(parsed.getTime())) {
                 return parsed;
@@ -1182,17 +1638,39 @@
             return null;
         }
 
+        function formatDate(date) {
+            if (!date) return '-';
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
         function formatMonthYear(date) {
             if (!date || !(date instanceof Date)) return '-';
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             return months[date.getMonth()] + ' ' + date.getFullYear();
         }
 
-        function createChartContainer(title) {
-            const container = document.createElement('div');
-            container.className = 'chart-container';
-            container.innerHTML = '<h3 class="chart-title">' + title + '</h3><div class="chart-wrapper"><canvas></canvas></div>';
-            return container;
+        function parseMonthYear(str) {
+            const months = { 'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5, 
+                           'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11 };
+            const parts = str.split(' ');
+            return new Date(parseInt(parts[1]), months[parts[0]], 1);
+        }
+
+        function truncateLabel(label, maxLength) {
+            if (label.length <= maxLength) return label;
+            return label.substring(0, maxLength - 3) + '...';
+        }
+
+        function generateGradientColors(count) {
+            const colors = [];
+            for (let i = 0; i < count; i++) {
+                const ratio = i / count;
+                const r = Math.round(78 + (68 - 78) * ratio);
+                const g = Math.round(205 + (160 - 205) * ratio);
+                const b = Math.round(196 + (141 - 196) * ratio);
+                colors.push(`rgba(${r}, ${g}, ${b}, 0.8)`);
+            }
+            return colors;
         }
 
         function createHistogramBins(data, binCount) {
@@ -1211,59 +1689,131 @@
                 labels.push(binMin.toFixed(2) + '-' + binMax.toFixed(2));
                 
                 data.forEach(value => {
-                    if (value >= binMin && value < binMax) {
-                        bins[i]++;
-                    } else if (i === binCount - 1 && value === max) {
+                    if (value >= binMin && (value < binMax || (i === binCount - 1 && value === max))) {
                         bins[i]++;
                     }
                 });
             }
             
-            return { labels: labels, counts: bins };
+            return { labels, counts: bins };
         }
 
         function displayTable() {
             const tableContainer = document.getElementById('tableContainer');
             const displayData = filteredData.slice(0, 100);
             
-            let html = '<p>Showing ' + displayData.length + ' of ' + filteredData.length + ' records</p>';
-            html += '<table><thead><tr><th>Lock ID</th><th>State</th><th>Purpose</th><th>Rate</th><th>Loan Amount</th></tr></thead><tbody>';
+            let html = `<p style="margin-bottom: 15px; color: #666;">Showing ${displayData.length} of ${filteredData.length.toLocaleString()} records</p>`;
+            html += `<table>
+                <thead>
+                    <tr>
+                        <th>Lock ID</th>
+                        <th>Seller</th>
+                        <th>Lock Date</th>
+                        <th>State</th>
+                        <th>Purpose</th>
+                        <th>Program</th>
+                        <th>Rate</th>
+                        <th>Loan Amount</th>
+                    </tr>
+                </thead>
+                <tbody>`;
             
             displayData.forEach(row => {
-                html += '<tr>' +
-                    '<td>' + (row.NexId || row['Lock Number'] || '-') + '</td>' +
-                    '<td>' + (row.State || '-') + '</td>' +
-                    '<td>' + (row.Purpose || '-') + '</td>' +
-                    '<td>' + (row['Final Rate'] || '-') + '</td>' +
-                    '<td>' + (row.LoanAmount ? '$' + parseFloat(row.LoanAmount).toLocaleString() : '-') + '</td>' +
-                    '</tr>';
+                const lockDate = parseDate(row[COLUMNS.lockDate]);
+                html += `<tr>
+                    <td>${row[COLUMNS.lockId] || '-'}</td>
+                    <td>${truncateLabel(row[COLUMNS.seller] || '-', 30)}</td>
+                    <td>${lockDate ? formatDate(lockDate) : '-'}</td>
+                    <td>${row[COLUMNS.state] || '-'}</td>
+                    <td>${row[COLUMNS.purpose] || '-'}</td>
+                    <td>${truncateLabel(row[COLUMNS.program] || '-', 25)}</td>
+                    <td>${row[COLUMNS.rate] || '-'}</td>
+                    <td>${row[COLUMNS.loanAmount] ? '$' + parseFloat(row[COLUMNS.loanAmount]).toLocaleString() : '-'}</td>
+                </tr>`;
             });
             
             html += '</tbody></table>';
             tableContainer.innerHTML = html;
+            
+            updateSummaryStats();
         }
 
         function updateSummaryStats() {
             const summaryStats = document.getElementById('summaryStats');
             const stats = calculateStats(filteredData);
-            summaryStats.innerHTML = '<div class="summary-stat">' +
-                '<span class="summary-stat-label">Total Records:</span>' +
-                '<span class="summary-stat-value">' + stats.totalLocks.toLocaleString() + '</span>' +
-                '</div>';
+            
+            summaryStats.innerHTML = `
+                <div class="summary-stat">
+                    <span class="summary-stat-label">Total Records:</span>
+                    <span class="summary-stat-value">${stats.totalLocks.toLocaleString()}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="summary-stat-label">Unique Sellers:</span>
+                    <span class="summary-stat-value">${stats.uniqueSellers}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="summary-stat-label">Avg Rate:</span>
+                    <span class="summary-stat-value">${stats.avgRate}%</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="summary-stat-label">Avg Loan:</span>
+                    <span class="summary-stat-value">$${stats.avgLoanAmount}</span>
+                </div>
+            `;
         }
 
         function applyFilters() {
-            // Simplified filter application
-            displayCharts();
-            displayTable();
-            updateSummaryStats();
+            showLoading('Applying filters...');
+            
+            setTimeout(() => {
+                const purposeFilter = document.getElementById('filterPurpose').value;
+                const programFilter = document.getElementById('filterProgram').value;
+                const loanTypeFilter = document.getElementById('filterLoanType').value;
+                const stateFilter = document.getElementById('filterState').value;
+                const sellerFilter = document.getElementById('filterSeller').value;
+                const dateFrom = document.getElementById('filterDateFrom').value;
+                const dateTo = document.getElementById('filterDateTo').value;
+                
+                filteredData = rawData.filter(row => {
+                    if (purposeFilter && row[COLUMNS.purpose] !== purposeFilter) return false;
+                    if (programFilter && row[COLUMNS.program] !== programFilter) return false;
+                    if (loanTypeFilter && row[COLUMNS.loanType] !== loanTypeFilter) return false;
+                    if (stateFilter && row[COLUMNS.state] !== stateFilter) return false;
+                    if (sellerFilter && row[COLUMNS.seller] !== sellerFilter) return false;
+                    
+                    if (dateFrom || dateTo) {
+                        const lockDate = parseDate(row[COLUMNS.lockDate]);
+                        if (!lockDate) return false;
+                        
+                        if (dateFrom && lockDate < new Date(dateFrom)) return false;
+                        if (dateTo && lockDate > new Date(dateTo + 'T23:59:59')) return false;
+                    }
+                    
+                    return true;
+                });
+                
+                displayDateRange();
+                displayInitialStats();
+                displayAllCharts();
+                displayTable();
+                hideLoading();
+            }, 100);
         }
 
         function resetFilters() {
+            document.getElementById('filterPurpose').value = '';
+            document.getElementById('filterProgram').value = '';
+            document.getElementById('filterLoanType').value = '';
+            document.getElementById('filterState').value = '';
+            document.getElementById('filterSeller').value = '';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            
             filteredData = [...rawData];
-            displayCharts();
+            displayDateRange();
+            displayInitialStats();
+            displayAllCharts();
             displayTable();
-            updateSummaryStats();
         }
 
         function exportFilteredData() {
@@ -1272,13 +1822,107 @@
                 return;
             }
 
-            const ws = XLSX.utils.json_to_sheet(filteredData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Filtered Data');
-            XLSX.writeFile(wb, 'filtered_lock_data.xlsx');
+            showLoading('Preparing Excel export...');
+            
+            setTimeout(() => {
+                const ws = XLSX.utils.json_to_sheet(filteredData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Filtered Data');
+                XLSX.writeFile(wb, 'filtered_lock_data.xlsx');
+                hideLoading();
+            }, 100);
         }
 
-        console.log('Lock Data Analytics Dashboard loaded successfully!');
+        async function exportToPDF() {
+            showLoading('Generating PDF report...');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('landscape', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 15;
+                
+                // Title page
+                pdf.setFillColor(78, 205, 196);
+                pdf.rect(0, 0, pageWidth, 40, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(28);
+                pdf.text('Lock Data Analytics Report', pageWidth / 2, 25, { align: 'center' });
+                
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFontSize(12);
+                const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                pdf.text(`Generated: ${today}`, pageWidth / 2, 55, { align: 'center' });
+                pdf.text(`Total Records: ${filteredData.length.toLocaleString()}`, pageWidth / 2, 65, { align: 'center' });
+                
+                const stats = calculateStats(filteredData);
+                pdf.text(`Unique Sellers: ${stats.uniqueSellers} | Avg Rate: ${stats.avgRate}% | Avg Loan: $${stats.avgLoanAmount}`, pageWidth / 2, 75, { align: 'center' });
+                
+                // Chart containers to capture
+                const chartConfigs = [
+                    { id: 'sellersChartContainer', title: 'Unique Sellers Per Month' },
+                    { id: 'locksChartContainer', title: 'Total Locks Per Month' },
+                    { id: 'fixedArmChartContainer', title: 'Fixed vs ARM Locks' },
+                    { id: 'purposeChartContainer', title: 'Loan Purpose Breakdown' },
+                    { id: 'programChartContainer', title: 'Program Breakdown' },
+                    { id: 'loanTypeChartContainer', title: 'Loan Type Breakdown' },
+                    { id: 'stateChartContainer', title: 'Top 10 States' },
+                    { id: 'rateChartContainer', title: 'Interest Rate Distribution' }
+                ];
+                
+                for (let i = 0; i < chartConfigs.length; i++) {
+                    const config = chartConfigs[i];
+                    const element = document.getElementById(config.id);
+                    
+                    if (element) {
+                        pdf.addPage();
+                        
+                        // Page header
+                        pdf.setFillColor(78, 205, 196);
+                        pdf.rect(0, 0, pageWidth, 20, 'F');
+                        pdf.setTextColor(255, 255, 255);
+                        pdf.setFontSize(16);
+                        pdf.text(config.title, pageWidth / 2, 13, { align: 'center' });
+                        
+                        // Capture chart
+                        const canvas = await html2canvas(element, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        });
+                        
+                        const imgData = canvas.toDataURL('image/png');
+                        const imgWidth = pageWidth - (margin * 2);
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        const maxHeight = pageHeight - 40;
+                        
+                        const finalHeight = Math.min(imgHeight, maxHeight);
+                        const finalWidth = (finalHeight === maxHeight) ? (canvas.width * finalHeight) / canvas.height : imgWidth;
+                        
+                        const xPos = (pageWidth - finalWidth) / 2;
+                        pdf.addImage(imgData, 'PNG', xPos, 25, finalWidth, finalHeight);
+                    }
+                }
+                
+                // Save PDF
+                pdf.save('lock_analytics_report.pdf');
+                hideLoading();
+                
+            } catch (error) {
+                console.error('PDF export error:', error);
+                hideLoading();
+                alert('Error generating PDF. Please try again.');
+            }
+        }
+
+        function resetDashboard() {
+            if (confirm('Start a new analysis? This will clear all current data.')) {
+                location.reload();
+            }
+        }
+
+        console.log('Lock Data Analytics Dashboard v2.0 loaded successfully!');
     </script>
 </body>
 </html>
