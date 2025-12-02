@@ -2198,6 +2198,11 @@
                 const pageHeight = pdf.internal.pageSize.getHeight();
                 const margin = 15;
                 
+                // PDF compression settings
+                const imageScale = 1.2;  // Reduced from 2 - still crisp but much smaller
+                const imageQuality = 0.7; // JPEG quality (0.0 to 1.0)
+                const imageFormat = 'JPEG'; // JPEG compresses much better than PNG
+                
                 // Title page
                 pdf.setFillColor(78, 205, 196);
                 pdf.rect(0, 0, pageWidth, 40, 'F');
@@ -2214,6 +2219,28 @@
                 const stats = calculateStats(filteredData);
                 pdf.text(`Unique Sellers: ${stats.uniqueSellers} | Avg Rate: ${stats.avgRate}% | Avg Loan: $${stats.avgLoanAmount}`, pageWidth / 2, 75, { align: 'center' });
 
+                // Helper function to capture and add image with compression
+                async function captureAndAddImage(element, yOffset = 25) {
+                    const canvas = await html2canvas(element, {
+                        scale: imageScale,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        useCORS: true
+                    });
+                    
+                    // Convert to JPEG with compression
+                    const imgData = canvas.toDataURL('image/jpeg', imageQuality);
+                    const imgWidth = pageWidth - (margin * 2);
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    const maxHeight = pageHeight - 40;
+                    
+                    const finalHeight = Math.min(imgHeight, maxHeight);
+                    const finalWidth = (finalHeight === maxHeight) ? (canvas.width * finalHeight) / canvas.height : imgWidth;
+                    
+                    const xPos = (pageWidth - finalWidth) / 2;
+                    pdf.addImage(imgData, imageFormat, xPos, yOffset, finalWidth, finalHeight, undefined, 'FAST');
+                }
+
                 // Add Status and Top Sellers cards
                 pdf.addPage();
                 pdf.setFillColor(78, 205, 196);
@@ -2224,22 +2251,7 @@
 
                 const specialCardsSection = document.getElementById('specialCardsSection');
                 if (specialCardsSection) {
-                    const canvas = await html2canvas(specialCardsSection, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
-                    
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgWidth = pageWidth - (margin * 2);
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                    const maxHeight = pageHeight - 40;
-                    
-                    const finalHeight = Math.min(imgHeight, maxHeight);
-                    const finalWidth = (finalHeight === maxHeight) ? (canvas.width * finalHeight) / canvas.height : imgWidth;
-                    
-                    const xPos = (pageWidth - finalWidth) / 2;
-                    pdf.addImage(imgData, 'PNG', xPos, 25, finalWidth, finalHeight);
+                    await captureAndAddImage(specialCardsSection);
                 }
                 
                 // Chart containers to capture
@@ -2268,23 +2280,8 @@
                         pdf.setFontSize(16);
                         pdf.text(config.title, pageWidth / 2, 13, { align: 'center' });
                         
-                        // Capture chart
-                        const canvas = await html2canvas(element, {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            logging: false
-                        });
-                        
-                        const imgData = canvas.toDataURL('image/png');
-                        const imgWidth = pageWidth - (margin * 2);
-                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                        const maxHeight = pageHeight - 40;
-                        
-                        const finalHeight = Math.min(imgHeight, maxHeight);
-                        const finalWidth = (finalHeight === maxHeight) ? (canvas.width * finalHeight) / canvas.height : imgWidth;
-                        
-                        const xPos = (pageWidth - finalWidth) / 2;
-                        pdf.addImage(imgData, 'PNG', xPos, 25, finalWidth, finalHeight);
+                        // Capture chart with compression
+                        await captureAndAddImage(element);
                     }
                 }
                 
