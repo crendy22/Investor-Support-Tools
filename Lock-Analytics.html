@@ -291,6 +291,226 @@
             margin-top: 5px;
         }
 
+        /* Special cards - Status and Top Sellers */
+        .special-cards-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .special-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .special-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .special-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .special-card-icon {
+            font-size: 1.8em;
+        }
+
+        .special-card-title {
+            color: #333;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        /* Status Card Styles */
+        .status-card {
+            border-left: 4px solid #4ECDC4;
+        }
+
+        .status-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(68, 160, 141, 0.1) 100%);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .status-main-label {
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .status-main-value {
+            font-size: 2em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-main-percent {
+            color: #44A08D;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .status-others-title {
+            color: #666;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .status-others-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .status-other-item {
+            background: #f8f9fa;
+            padding: 10px 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .status-other-item:hover {
+            background: #f0f0f0;
+        }
+
+        .status-other-item.cancelled {
+            border-left: 3px solid #FF6B6B;
+        }
+
+        .status-other-item.denied {
+            border-left: 3px solid #ffa502;
+        }
+
+        .status-other-item.pending {
+            border-left: 3px solid #74b9ff;
+        }
+
+        .status-other-label {
+            color: #555;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .status-other-value {
+            color: #333;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        /* Top Sellers Card Styles */
+        .sellers-card {
+            border-left: 4px solid #44A08D;
+        }
+
+        .sellers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .seller-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .seller-item:hover {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(68, 160, 141, 0.1) 100%);
+        }
+
+        .seller-rank {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85em;
+            flex-shrink: 0;
+        }
+
+        .seller-rank.gold {
+            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+            color: white;
+        }
+
+        .seller-rank.silver {
+            background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%);
+            color: white;
+        }
+
+        .seller-rank.bronze {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+        }
+
+        .seller-rank.other {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .seller-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .seller-name {
+            color: #333;
+            font-weight: 500;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .seller-bar-container {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .seller-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .seller-count {
+            font-weight: bold;
+            color: #44A08D;
+            font-size: 1em;
+            flex-shrink: 0;
+        }
+
         .filters-section {
             background: rgba(255, 255, 255, 0.95);
             padding: 30px;
@@ -626,6 +846,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .special-cards-row {
+                grid-template-columns: 1fr;
+            }
+
             .header {
                 flex-direction: column;
                 text-align: center;
@@ -722,6 +946,24 @@
             <div class="stats-grid" id="statsGrid"></div>
         </div>
 
+        <!-- Special Cards: Status and Top Sellers -->
+        <div id="specialCardsSection" class="special-cards-row hidden">
+            <div class="special-card status-card" id="statusCard">
+                <div class="special-card-header">
+                    <span class="special-card-icon">📊</span>
+                    <span class="special-card-title">Lock Status Breakdown</span>
+                </div>
+                <div id="statusContent"></div>
+            </div>
+            <div class="special-card sellers-card" id="topSellersCard">
+                <div class="special-card-header">
+                    <span class="special-card-icon">🏆</span>
+                    <span class="special-card-title">Top 10 Sellers by Lock Volume</span>
+                </div>
+                <div id="topSellersContent"></div>
+            </div>
+        </div>
+
         <div id="filtersSection" class="filters-section hidden">
             <h2 style="margin-bottom: 20px; color: #333;">🎯 Filter Data</h2>
             <div class="filter-grid" id="filterGrid"></div>
@@ -783,7 +1025,8 @@
             loanAmount: 'LoanAmount',
             ltv: 'LTV',
             lockId: 'NexId',
-            mortgageProduct: 'MortgageProduct'
+            mortgageProduct: 'MortgageProduct',
+            status: 'Status'
         };
 
         // Initialize when page loads
@@ -934,12 +1177,15 @@
             
             displayDateRange();
             displayInitialStats();
+            displayStatusCard();
+            displayTopSellersCard();
             setupFilters();
             displayAllCharts();
             displayTable();
             
             // Show all sections
             document.getElementById('statsSection').classList.remove('hidden');
+            document.getElementById('specialCardsSection').classList.remove('hidden');
             document.getElementById('filtersSection').classList.remove('hidden');
             document.getElementById('chartsContainer').classList.remove('hidden');
             document.getElementById('tableSection').classList.remove('hidden');
@@ -983,6 +1229,98 @@
             });
             
             statsGrid.innerHTML = html;
+        }
+
+        function displayStatusCard() {
+            const statusContent = document.getElementById('statusContent');
+            const statusCounts = getValueCounts(filteredData, COLUMNS.status);
+            
+            // Sort by count descending
+            const sorted = Object.entries(statusCounts).sort((a, b) => b[1] - a[1]);
+            const total = sorted.reduce((sum, [_, count]) => sum + count, 0);
+            
+            // Find Lock Approved (main status)
+            const lockApprovedEntry = sorted.find(([status]) => status === 'Lock Approved');
+            const lockApprovedCount = lockApprovedEntry ? lockApprovedEntry[1] : 0;
+            const lockApprovedPercent = total > 0 ? ((lockApprovedCount / total) * 100).toFixed(1) : 0;
+            
+            // Other statuses
+            const otherStatuses = sorted.filter(([status]) => status !== 'Lock Approved');
+            
+            let html = `
+                <div class="status-main">
+                    <div>
+                        <div class="status-main-label">✅ Lock Approved</div>
+                        <div class="status-main-percent">${lockApprovedPercent}% of total</div>
+                    </div>
+                    <div class="status-main-value">${lockApprovedCount.toLocaleString()}</div>
+                </div>
+            `;
+            
+            if (otherStatuses.length > 0) {
+                html += `<div class="status-others-title">Other Statuses</div>`;
+                html += `<div class="status-others-grid">`;
+                
+                otherStatuses.forEach(([status, count]) => {
+                    let itemClass = 'status-other-item';
+                    if (status.toLowerCase().includes('cancel')) itemClass += ' cancelled';
+                    else if (status.toLowerCase().includes('denied')) itemClass += ' denied';
+                    else itemClass += ' pending';
+                    
+                    const displayStatus = status.length > 18 ? status.substring(0, 16) + '...' : status;
+                    
+                    html += `
+                        <div class="${itemClass}" title="${status}">
+                            <span class="status-other-label">${displayStatus}</span>
+                            <span class="status-other-value">${count.toLocaleString()}</span>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            }
+            
+            statusContent.innerHTML = html;
+        }
+
+        function displayTopSellersCard() {
+            const topSellersContent = document.getElementById('topSellersContent');
+            const sellerCounts = getValueCounts(filteredData, COLUMNS.seller);
+            
+            // Sort by count and take top 10
+            const sorted = Object.entries(sellerCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+            
+            let html = '<div class="sellers-list">';
+            
+            sorted.forEach(([seller, count], index) => {
+                let rankClass = 'other';
+                if (index === 0) rankClass = 'gold';
+                else if (index === 1) rankClass = 'silver';
+                else if (index === 2) rankClass = 'bronze';
+                
+                const barWidth = (count / maxCount) * 100;
+                const displayName = seller.length > 35 ? seller.substring(0, 33) + '...' : seller;
+                
+                html += `
+                    <div class="seller-item" title="${seller}">
+                        <div class="seller-rank ${rankClass}">${index + 1}</div>
+                        <div class="seller-info">
+                            <div class="seller-name">${displayName}</div>
+                            <div class="seller-bar-container">
+                                <div class="seller-bar" style="width: ${barWidth}%"></div>
+                            </div>
+                        </div>
+                        <div class="seller-count">${count.toLocaleString()}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            topSellersContent.innerHTML = html;
         }
 
         function calculateStats(data) {
@@ -1029,6 +1367,7 @@
             const loanTypes = [...new Set(filteredData.map(r => r[COLUMNS.loanType]).filter(Boolean))].sort();
             const states = [...new Set(filteredData.map(r => r[COLUMNS.state]).filter(Boolean))].sort();
             const sellers = [...new Set(filteredData.map(r => r[COLUMNS.seller]).filter(Boolean))].sort();
+            const statuses = [...new Set(filteredData.map(r => r[COLUMNS.status]).filter(Boolean))].sort();
 
             filterGrid.innerHTML = `
                 <div class="filter-group">
@@ -1064,6 +1403,13 @@
                     <select class="filter-select" id="filterSeller">
                         <option value="">All Sellers</option>
                         ${sellers.map(s => `<option value="${s}">${s}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select class="filter-select" id="filterStatus">
+                        <option value="">All Statuses</option>
+                        ${statuses.map(s => `<option value="${s}">${s}</option>`).join('')}
                     </select>
                 </div>
                 <div class="filter-group">
@@ -1709,6 +2055,7 @@
                         <th>Lock ID</th>
                         <th>Seller</th>
                         <th>Lock Date</th>
+                        <th>Status</th>
                         <th>State</th>
                         <th>Purpose</th>
                         <th>Program</th>
@@ -1724,6 +2071,7 @@
                     <td>${row[COLUMNS.lockId] || '-'}</td>
                     <td>${truncateLabel(row[COLUMNS.seller] || '-', 30)}</td>
                     <td>${lockDate ? formatDate(lockDate) : '-'}</td>
+                    <td>${row[COLUMNS.status] || '-'}</td>
                     <td>${row[COLUMNS.state] || '-'}</td>
                     <td>${row[COLUMNS.purpose] || '-'}</td>
                     <td>${truncateLabel(row[COLUMNS.program] || '-', 25)}</td>
@@ -1771,6 +2119,7 @@
                 const loanTypeFilter = document.getElementById('filterLoanType').value;
                 const stateFilter = document.getElementById('filterState').value;
                 const sellerFilter = document.getElementById('filterSeller').value;
+                const statusFilter = document.getElementById('filterStatus').value;
                 const dateFrom = document.getElementById('filterDateFrom').value;
                 const dateTo = document.getElementById('filterDateTo').value;
                 
@@ -1780,6 +2129,7 @@
                     if (loanTypeFilter && row[COLUMNS.loanType] !== loanTypeFilter) return false;
                     if (stateFilter && row[COLUMNS.state] !== stateFilter) return false;
                     if (sellerFilter && row[COLUMNS.seller] !== sellerFilter) return false;
+                    if (statusFilter && row[COLUMNS.status] !== statusFilter) return false;
                     
                     if (dateFrom || dateTo) {
                         const lockDate = parseDate(row[COLUMNS.lockDate]);
@@ -1794,6 +2144,8 @@
                 
                 displayDateRange();
                 displayInitialStats();
+                displayStatusCard();
+                displayTopSellersCard();
                 displayAllCharts();
                 displayTable();
                 hideLoading();
@@ -1806,12 +2158,15 @@
             document.getElementById('filterLoanType').value = '';
             document.getElementById('filterState').value = '';
             document.getElementById('filterSeller').value = '';
+            document.getElementById('filterStatus').value = '';
             document.getElementById('filterDateFrom').value = '';
             document.getElementById('filterDateTo').value = '';
             
             filteredData = [...rawData];
             displayDateRange();
             displayInitialStats();
+            displayStatusCard();
+            displayTopSellersCard();
             displayAllCharts();
             displayTable();
         }
@@ -1858,6 +2213,34 @@
                 
                 const stats = calculateStats(filteredData);
                 pdf.text(`Unique Sellers: ${stats.uniqueSellers} | Avg Rate: ${stats.avgRate}% | Avg Loan: $${stats.avgLoanAmount}`, pageWidth / 2, 75, { align: 'center' });
+
+                // Add Status and Top Sellers cards
+                pdf.addPage();
+                pdf.setFillColor(78, 205, 196);
+                pdf.rect(0, 0, pageWidth, 20, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(16);
+                pdf.text('Status & Top Sellers Overview', pageWidth / 2, 13, { align: 'center' });
+
+                const specialCardsSection = document.getElementById('specialCardsSection');
+                if (specialCardsSection) {
+                    const canvas = await html2canvas(specialCardsSection, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = pageWidth - (margin * 2);
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    const maxHeight = pageHeight - 40;
+                    
+                    const finalHeight = Math.min(imgHeight, maxHeight);
+                    const finalWidth = (finalHeight === maxHeight) ? (canvas.width * finalHeight) / canvas.height : imgWidth;
+                    
+                    const xPos = (pageWidth - finalWidth) / 2;
+                    pdf.addImage(imgData, 'PNG', xPos, 25, finalWidth, finalHeight);
+                }
                 
                 // Chart containers to capture
                 const chartConfigs = [
@@ -1922,7 +2305,7 @@
             }
         }
 
-        console.log('Lock Data Analytics Dashboard v2.0 loaded successfully!');
+        console.log('Lock Data Analytics Dashboard v3.0 loaded successfully!');
     </script>
 </body>
 </html>
