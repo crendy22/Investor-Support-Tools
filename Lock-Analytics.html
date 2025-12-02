@@ -748,6 +748,14 @@
             text-align: center;
         }
 
+        .chart-subtitle {
+            color: #666;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: -15px;
+            margin-bottom: 15px;
+        }
+
         .chart-wrapper {
             position: relative;
             height: calc(100% - 50px);
@@ -981,6 +989,11 @@
             <div class="charts-section" id="trendChartsSection"></div>
 
             <div class="section-title">
+                <h2>Risk & Credit Analysis</h2>
+            </div>
+            <div class="charts-section" id="riskChartsSection"></div>
+
+            <div class="section-title">
                 <h2>Distribution Analysis</h2>
             </div>
             <div class="charts-section" id="distributionChartsSection"></div>
@@ -1026,7 +1039,12 @@
             ltv: 'LTV',
             lockId: 'NexId',
             mortgageProduct: 'MortgageProduct',
-            status: 'Status'
+            status: 'Status',
+            creditScore: 'CreditScore',
+            dscr: 'Actual DSCR',
+            incomeDoc: 'IncomeDocumentation',
+            occupancy: 'Occupancy',
+            prepayMonths: 'PrepayMonths'
         };
 
         // Initialize when page loads
@@ -1215,8 +1233,8 @@
                 { label: 'Unique Sellers', value: stats.uniqueSellers.toLocaleString(), detail: 'Active originators' },
                 { label: 'Purchase', value: stats.purchasePercent + '%', detail: stats.purchaseCount.toLocaleString() + ' locks' },
                 { label: 'Refinance', value: stats.refiPercent + '%', detail: stats.refiCount.toLocaleString() + ' locks' },
-                { label: 'Avg Rate', value: stats.avgRate + '%', detail: 'Interest rate' },
-                { label: 'Avg Loan', value: '$' + stats.avgLoanAmount, detail: 'Loan amount' }
+                { label: 'Avg FICO', value: stats.avgFico, detail: 'Credit score' },
+                { label: 'Avg LTV', value: stats.avgLTV + '%', detail: 'Loan to value' }
             ];
             
             let html = '';
@@ -1331,7 +1349,8 @@
                 refiCount: 0,
                 rates: [],
                 loanAmounts: [],
-                ltvs: []
+                ltvs: [],
+                ficos: []
             };
 
             data.forEach(row => {
@@ -1342,10 +1361,12 @@
                 const rate = parseFloat(row[COLUMNS.rate]);
                 const loanAmount = parseFloat(row[COLUMNS.loanAmount]);
                 const ltv = parseFloat(row[COLUMNS.ltv]);
+                const fico = parseFloat(row[COLUMNS.creditScore]);
 
                 if (!isNaN(rate)) stats.rates.push(rate);
                 if (!isNaN(loanAmount)) stats.loanAmounts.push(loanAmount);
                 if (!isNaN(ltv)) stats.ltvs.push(ltv);
+                if (!isNaN(fico) && fico > 0) stats.ficos.push(fico);
             });
 
             stats.purchasePercent = stats.totalLocks > 0 ? ((stats.purchaseCount / stats.totalLocks) * 100).toFixed(1) : 0;
@@ -1354,7 +1375,44 @@
             stats.avgLoanAmount = stats.loanAmounts.length > 0 ? 
                 Math.round(stats.loanAmounts.reduce((a, b) => a + b, 0) / stats.loanAmounts.length).toLocaleString() : 0;
             stats.avgLTV = stats.ltvs.length > 0 ? ((stats.ltvs.reduce((a, b) => a + b, 0) / stats.ltvs.length) * 100).toFixed(1) : 0;
+            stats.avgFico = stats.ficos.length > 0 ? Math.round(stats.ficos.reduce((a, b) => a + b, 0) / stats.ficos.length) : 'N/A';
 
+            return stats;
+        }
+
+        function calculateDetailedStats(data) {
+            // More detailed stats for PDF cover page
+            const stats = calculateStats(data);
+            
+            // Additional calculations
+            const ltvs = data.map(r => parseFloat(r[COLUMNS.ltv])).filter(v => !isNaN(v));
+            const ficos = data.map(r => parseFloat(r[COLUMNS.creditScore])).filter(v => !isNaN(v) && v > 0);
+            const rates = data.map(r => parseFloat(r[COLUMNS.rate])).filter(v => !isNaN(v));
+            const loanAmounts = data.map(r => parseFloat(r[COLUMNS.loanAmount])).filter(v => !isNaN(v));
+            
+            stats.minFico = ficos.length > 0 ? Math.min(...ficos) : 'N/A';
+            stats.maxFico = ficos.length > 0 ? Math.max(...ficos) : 'N/A';
+            stats.minLTV = ltvs.length > 0 ? (Math.min(...ltvs) * 100).toFixed(1) : 'N/A';
+            stats.maxLTV = ltvs.length > 0 ? (Math.max(...ltvs) * 100).toFixed(1) : 'N/A';
+            stats.minRate = rates.length > 0 ? Math.min(...rates).toFixed(3) : 'N/A';
+            stats.maxRate = rates.length > 0 ? Math.max(...rates).toFixed(3) : 'N/A';
+            stats.totalVolume = loanAmounts.length > 0 ? loanAmounts.reduce((a, b) => a + b, 0) : 0;
+            stats.avgLoanAmt = loanAmounts.length > 0 ? Math.round(loanAmounts.reduce((a, b) => a + b, 0) / loanAmounts.length) : 0;
+            
+            // Status breakdown
+            const statusCounts = getValueCounts(data, COLUMNS.status);
+            stats.lockApproved = statusCounts['Lock Approved'] || 0;
+            stats.cancelled = statusCounts['Cancelled'] || 0;
+            
+            // Top states
+            const stateCounts = getValueCounts(data, COLUMNS.state);
+            const topStates = Object.entries(stateCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+            stats.topStates = topStates;
+            
+            // Occupancy breakdown
+            const occupancyCounts = getValueCounts(data, COLUMNS.occupancy);
+            stats.occupancy = occupancyCounts;
+            
             return stats;
         }
 
@@ -1433,66 +1491,374 @@
             charts = {};
 
             const trendSection = document.getElementById('trendChartsSection');
+            const riskSection = document.getElementById('riskChartsSection');
             const distributionSection = document.getElementById('distributionChartsSection');
             const geoSection = document.getElementById('geoChartsSection');
 
             trendSection.innerHTML = '';
+            riskSection.innerHTML = '';
             distributionSection.innerHTML = '';
             geoSection.innerHTML = '';
 
             // --- TREND CHARTS ---
-
-            // 1. Unique Sellers Per Month Chart
             const sellersContainer = createChartContainer('Unique Sellers Per Month', 'sellersChart');
             trendSection.appendChild(sellersContainer);
             createUniqueSellersChart();
 
-            // 2. Locks Per Month Chart
             const locksContainer = createChartContainer('Total Locks Per Month', 'locksChart');
             trendSection.appendChild(locksContainer);
             createLocksPerMonthChart();
 
-            // 3. Fixed vs ARM Monthly Trend
             const fixedArmContainer = createChartContainer('Fixed vs ARM Locks - Monthly Trend', 'fixedArmChart');
             trendSection.appendChild(fixedArmContainer);
             createFixedArmChart();
 
-            // --- DISTRIBUTION CHARTS ---
+            // --- RISK CHARTS (NEW) ---
+            const ficoContainer = createChartContainer('FICO Score Distribution', 'ficoChart');
+            riskSection.appendChild(ficoContainer);
+            createFicoChart();
 
-            // 4. Loan Purpose Breakdown
+            const ltvContainer = createChartContainer('LTV Distribution', 'ltvChart');
+            riskSection.appendChild(ltvContainer);
+            createLtvChart();
+
+            const dscrContainer = createChartContainer('DSCR Distribution by Lock Status', 'dscrChart', 'DSCR / No Ratio DSCR loans only');
+            riskSection.appendChild(dscrContainer);
+            createDscrChart();
+
+            const prepayContainer = createChartContainer('Prepayment Term Distribution', 'prepayChart', 'Investment property loans only');
+            riskSection.appendChild(prepayContainer);
+            createPrepayChart();
+
+            // --- DISTRIBUTION CHARTS ---
             const purposeContainer = createChartContainer('Loan Purpose Breakdown', 'purposeChart');
             distributionSection.appendChild(purposeContainer);
             createPurposeChart();
 
-            // 5. Program Breakdown
             const programContainer = createChartContainer('Program Breakdown', 'programChart');
             distributionSection.appendChild(programContainer);
             createProgramChart();
 
-            // 6. Loan Type Breakdown
             const loanTypeContainer = createChartContainer('Loan Type Breakdown', 'loanTypeChart');
             distributionSection.appendChild(loanTypeContainer);
             createLoanTypeChart();
 
             // --- GEO & RATE CHARTS ---
-
-            // 7. Top States Chart
             const stateContainer = createChartContainer('Top 10 States by Lock Volume', 'stateChart');
             geoSection.appendChild(stateContainer);
             createStateChart();
 
-            // 8. Rate Distribution Chart
             const rateContainer = createChartContainer('Interest Rate Distribution', 'rateChart');
             geoSection.appendChild(rateContainer);
             createRateChart();
         }
 
-        function createChartContainer(title, chartId) {
+        function createChartContainer(title, chartId, subtitle = null) {
             const container = document.createElement('div');
             container.className = 'chart-container';
             container.id = chartId + 'Container';
-            container.innerHTML = `<h3 class="chart-title">${title}</h3><div class="chart-wrapper"><canvas id="${chartId}"></canvas></div>`;
+            let html = `<h3 class="chart-title">${title}</h3>`;
+            if (subtitle) {
+                html += `<p class="chart-subtitle">${subtitle}</p>`;
+            }
+            html += `<div class="chart-wrapper"><canvas id="${chartId}"></canvas></div>`;
+            container.innerHTML = html;
             return container;
+        }
+
+        // NEW: FICO Distribution Chart
+        function createFicoChart() {
+            const ctx = document.getElementById('ficoChart').getContext('2d');
+            const ficos = filteredData
+                .map(row => parseFloat(row[COLUMNS.creditScore]))
+                .filter(f => !isNaN(f) && f > 0);
+            
+            // Create bins for FICO ranges
+            const bins = {
+                '< 620': 0,
+                '620-659': 0,
+                '660-699': 0,
+                '700-739': 0,
+                '740-779': 0,
+                '780+': 0
+            };
+            
+            ficos.forEach(score => {
+                if (score < 620) bins['< 620']++;
+                else if (score < 660) bins['620-659']++;
+                else if (score < 700) bins['660-699']++;
+                else if (score < 740) bins['700-739']++;
+                else if (score < 780) bins['740-779']++;
+                else bins['780+']++;
+            });
+            
+            charts.fico = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(bins),
+                    datasets: [{
+                        label: 'Number of Loans',
+                        data: Object.values(bins),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(255, 159, 64, 0.7)',
+                            'rgba(255, 205, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(78, 205, 196, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(255, 99, 132)',
+                            'rgb(255, 159, 64)',
+                            'rgb(255, 205, 86)',
+                            'rgb(75, 192, 192)',
+                            'rgb(54, 162, 235)',
+                            'rgb(78, 205, 196)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const total = ficos.length;
+                                    const pct = ((context.parsed.y / total) * 100).toFixed(1);
+                                    return `${pct}% of total`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Number of Loans', font: { weight: 'bold' } }
+                        },
+                        x: {
+                            title: { display: true, text: 'FICO Score Range', font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // NEW: LTV Distribution Chart
+        function createLtvChart() {
+            const ctx = document.getElementById('ltvChart').getContext('2d');
+            const ltvs = filteredData
+                .map(row => parseFloat(row[COLUMNS.ltv]))
+                .filter(l => !isNaN(l));
+            
+            // Create bins for LTV ranges (as percentages)
+            const bins = {
+                '≤ 50%': 0,
+                '50-60%': 0,
+                '60-70%': 0,
+                '70-75%': 0,
+                '75-80%': 0,
+                '> 80%': 0
+            };
+            
+            ltvs.forEach(ltv => {
+                const pct = ltv * 100;
+                if (pct <= 50) bins['≤ 50%']++;
+                else if (pct <= 60) bins['50-60%']++;
+                else if (pct <= 70) bins['60-70%']++;
+                else if (pct <= 75) bins['70-75%']++;
+                else if (pct <= 80) bins['75-80%']++;
+                else bins['> 80%']++;
+            });
+            
+            charts.ltv = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(bins),
+                    datasets: [{
+                        label: 'Number of Loans',
+                        data: Object.values(bins),
+                        backgroundColor: 'rgba(68, 160, 141, 0.7)',
+                        borderColor: '#44A08D',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const total = ltvs.length;
+                                    const pct = ((context.parsed.y / total) * 100).toFixed(1);
+                                    return `${pct}% of total`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Number of Loans', font: { weight: 'bold' } }
+                        },
+                        x: {
+                            title: { display: true, text: 'LTV Range', font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // NEW: DSCR Distribution Chart (DSCR loans only, by status)
+        function createDscrChart() {
+            const ctx = document.getElementById('dscrChart').getContext('2d');
+            
+            // Filter to DSCR loans only
+            const dscrLoans = filteredData.filter(row => 
+                row[COLUMNS.incomeDoc] === 'DSCR  / No Ratio DSCR'
+            );
+            
+            // Separate by status
+            const approvedDscrs = dscrLoans
+                .filter(row => row[COLUMNS.status] === 'Lock Approved')
+                .map(row => parseFloat(row[COLUMNS.dscr]))
+                .filter(d => !isNaN(d) && d > 0);
+                
+            const cancelledDscrs = dscrLoans
+                .filter(row => row[COLUMNS.status] === 'Cancelled')
+                .map(row => parseFloat(row[COLUMNS.dscr]))
+                .filter(d => !isNaN(d) && d > 0);
+            
+            // Create bins
+            const binLabels = ['< 1.0', '1.0-1.1', '1.1-1.2', '1.2-1.3', '1.3-1.4', '1.4+'];
+            
+            function binDscr(dscrs) {
+                const bins = [0, 0, 0, 0, 0, 0];
+                dscrs.forEach(d => {
+                    if (d < 1.0) bins[0]++;
+                    else if (d < 1.1) bins[1]++;
+                    else if (d < 1.2) bins[2]++;
+                    else if (d < 1.3) bins[3]++;
+                    else if (d < 1.4) bins[4]++;
+                    else bins[5]++;
+                });
+                return bins;
+            }
+            
+            charts.dscr = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: binLabels,
+                    datasets: [
+                        {
+                            label: 'Lock Approved',
+                            data: binDscr(approvedDscrs),
+                            backgroundColor: 'rgba(78, 205, 196, 0.7)',
+                            borderColor: '#4ECDC4',
+                            borderWidth: 2,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Cancelled',
+                            data: binDscr(cancelledDscrs),
+                            backgroundColor: 'rgba(255, 107, 107, 0.7)',
+                            borderColor: '#FF6B6B',
+                            borderWidth: 2,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Number of Loans', font: { weight: 'bold' } }
+                        },
+                        x: {
+                            title: { display: true, text: 'DSCR Range', font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // NEW: Prepayment Term Distribution (Investment only)
+        function createPrepayChart() {
+            const ctx = document.getElementById('prepayChart').getContext('2d');
+            
+            // Filter to Investment occupancy only
+            const investmentLoans = filteredData.filter(row => 
+                row[COLUMNS.occupancy] === 'Investment'
+            );
+            
+            const prepayTerms = investmentLoans
+                .map(row => parseFloat(row[COLUMNS.prepayMonths]))
+                .filter(p => !isNaN(p));
+            
+            // Group by prepay months
+            const prepayGroups = {};
+            prepayTerms.forEach(term => {
+                const label = term === 0 ? 'No Prepay' : `${term} months`;
+                prepayGroups[label] = (prepayGroups[label] || 0) + 1;
+            });
+            
+            // Sort by term length
+            const sortedGroups = Object.entries(prepayGroups).sort((a, b) => {
+                if (a[0] === 'No Prepay') return -1;
+                if (b[0] === 'No Prepay') return 1;
+                return parseInt(a[0]) - parseInt(b[0]);
+            });
+            
+            charts.prepay = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedGroups.map(g => g[0]),
+                    datasets: [{
+                        label: 'Number of Loans',
+                        data: sortedGroups.map(g => g[1]),
+                        backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                        borderColor: 'rgb(153, 102, 255)',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const total = prepayTerms.length;
+                                    const pct = ((context.parsed.y / total) * 100).toFixed(1);
+                                    return `${pct}% of investment loans`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Number of Loans', font: { weight: 'bold' } }
+                        },
+                        x: {
+                            title: { display: true, text: 'Prepayment Term', font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            });
         }
 
         // Chart creation functions
@@ -1518,9 +1884,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 afterLabel: function(context) {
@@ -1533,21 +1897,11 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Unique Sellers',
-                                font: { weight: 'bold' }
-                            },
-                            ticks: {
-                                stepSize: 1
-                            }
+                            title: { display: true, text: 'Number of Unique Sellers', font: { weight: 'bold' } },
+                            ticks: { stepSize: 1 }
                         },
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Month',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Month', font: { weight: 'bold' } }
                         }
                     }
                 }
@@ -1577,26 +1931,14 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Locks',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Number of Locks', font: { weight: 'bold' } }
                         },
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Month',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Month', font: { weight: 'bold' } }
                         }
                     }
                 }
@@ -1637,16 +1979,10 @@
                         x: { stacked: false },
                         y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Locks',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Number of Locks', font: { weight: 'bold' } }
                         }
                     },
-                    plugins: {
-                        legend: { position: 'top' }
-                    }
+                    plugins: { legend: { position: 'top' } }
                 }
             });
         }
@@ -1661,13 +1997,7 @@
                     labels: Object.keys(purposeCounts),
                     datasets: [{
                         data: Object.values(purposeCounts),
-                        backgroundColor: [
-                            '#4ECDC4',
-                            '#44A08D',
-                            '#43e97b',
-                            '#38f9d7',
-                            '#4facfe'
-                        ],
+                        backgroundColor: ['#4ECDC4', '#44A08D', '#43e97b', '#38f9d7', '#4facfe'],
                         borderWidth: 2,
                         borderColor: '#fff'
                     }]
@@ -1676,10 +2006,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { padding: 15, font: { size: 12 } }
-                        },
+                        legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
@@ -1697,8 +2024,6 @@
         function createProgramChart() {
             const ctx = document.getElementById('programChart').getContext('2d');
             const programCounts = getValueCounts(filteredData, COLUMNS.program);
-            
-            // Sort by count and take top entries
             const sorted = Object.entries(programCounts).sort((a, b) => b[1] - a[1]);
             
             charts.program = new Chart(ctx, {
@@ -1722,20 +2047,14 @@
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                title: function(context) {
-                                    return sorted[context[0].dataIndex][0];
-                                }
+                                title: function(context) { return sorted[context[0].dataIndex][0]; }
                             }
                         }
                     },
                     scales: {
                         x: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Locks',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Number of Locks', font: { weight: 'bold' } }
                         }
                     }
                 }
@@ -1752,13 +2071,7 @@
                     labels: Object.keys(loanTypeCounts),
                     datasets: [{
                         data: Object.values(loanTypeCounts),
-                        backgroundColor: [
-                            '#4ECDC4',
-                            '#FF6B6B',
-                            '#43e97b',
-                            '#4facfe',
-                            '#f093fb'
-                        ],
+                        backgroundColor: ['#4ECDC4', '#FF6B6B', '#43e97b', '#4facfe', '#f093fb'],
                         borderWidth: 3,
                         borderColor: '#fff'
                     }]
@@ -1767,10 +2080,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { padding: 15, font: { size: 12 } }
-                        },
+                        legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
@@ -1806,17 +2116,11 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Locks',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Number of Locks', font: { weight: 'bold' } }
                         }
                     }
                 }
@@ -1844,24 +2148,14 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Locks',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Number of Locks', font: { weight: 'bold' } }
                         },
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Interest Rate (%)',
-                                font: { weight: 'bold' }
-                            }
+                            title: { display: true, text: 'Interest Rate (%)', font: { weight: 'bold' } }
                         }
                     }
                 }
@@ -1887,10 +2181,7 @@
                 monthlyData[monthKey].add(seller);
             });
             
-            // Sort by date
-            const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
-                return parseMonthYear(a) - parseMonthYear(b);
-            });
+            const sortedMonths = Object.keys(monthlyData).sort((a, b) => parseMonthYear(a) - parseMonthYear(b));
             
             return {
                 labels: sortedMonths,
@@ -1910,9 +2201,7 @@
                 monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
             });
             
-            const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
-                return parseMonthYear(a) - parseMonthYear(b);
-            });
+            const sortedMonths = Object.keys(monthlyData).sort((a, b) => parseMonthYear(a) - parseMonthYear(b));
             
             return {
                 labels: sortedMonths,
@@ -1944,9 +2233,7 @@
                 }
             });
             
-            const sortedMonths = Object.keys(monthlyStats).sort((a, b) => {
-                return parseMonthYear(a) - parseMonthYear(b);
-            });
+            const sortedMonths = Object.keys(monthlyStats).sort((a, b) => parseMonthYear(a) - parseMonthYear(b));
             
             return {
                 labels: sortedMonths,
@@ -1967,20 +2254,12 @@
         // Utility functions
         function parseDate(dateValue) {
             if (!dateValue) return null;
-            
-            if (dateValue instanceof Date) {
-                return dateValue;
-            }
-            
+            if (dateValue instanceof Date) return dateValue;
             if (typeof dateValue === 'number' && dateValue > 25000 && dateValue < 50000) {
                 return new Date((dateValue - 25569) * 86400 * 1000);
             }
-            
             const parsed = new Date(dateValue);
-            if (!isNaN(parsed.getTime())) {
-                return parsed;
-            }
-            
+            if (!isNaN(parsed.getTime())) return parsed;
             return null;
         }
 
@@ -2059,6 +2338,8 @@
                         <th>State</th>
                         <th>Purpose</th>
                         <th>Program</th>
+                        <th>FICO</th>
+                        <th>LTV</th>
                         <th>Rate</th>
                         <th>Loan Amount</th>
                     </tr>
@@ -2067,6 +2348,9 @@
             
             displayData.forEach(row => {
                 const lockDate = parseDate(row[COLUMNS.lockDate]);
+                const ltv = parseFloat(row[COLUMNS.ltv]);
+                const ltvDisplay = !isNaN(ltv) ? (ltv * 100).toFixed(1) + '%' : '-';
+                
                 html += `<tr>
                     <td>${row[COLUMNS.lockId] || '-'}</td>
                     <td>${truncateLabel(row[COLUMNS.seller] || '-', 30)}</td>
@@ -2075,6 +2359,8 @@
                     <td>${row[COLUMNS.state] || '-'}</td>
                     <td>${row[COLUMNS.purpose] || '-'}</td>
                     <td>${truncateLabel(row[COLUMNS.program] || '-', 25)}</td>
+                    <td>${row[COLUMNS.creditScore] || '-'}</td>
+                    <td>${ltvDisplay}</td>
                     <td>${row[COLUMNS.rate] || '-'}</td>
                     <td>${row[COLUMNS.loanAmount] ? '$' + parseFloat(row[COLUMNS.loanAmount]).toLocaleString() : '-'}</td>
                 </tr>`;
@@ -2100,12 +2386,12 @@
                     <span class="summary-stat-value">${stats.uniqueSellers}</span>
                 </div>
                 <div class="summary-stat">
-                    <span class="summary-stat-label">Avg Rate:</span>
-                    <span class="summary-stat-value">${stats.avgRate}%</span>
+                    <span class="summary-stat-label">Avg FICO:</span>
+                    <span class="summary-stat-value">${stats.avgFico}</span>
                 </div>
                 <div class="summary-stat">
-                    <span class="summary-stat-label">Avg Loan:</span>
-                    <span class="summary-stat-value">$${stats.avgLoanAmount}</span>
+                    <span class="summary-stat-label">Avg LTV:</span>
+                    <span class="summary-stat-value">${stats.avgLTV}%</span>
                 </div>
             `;
         }
@@ -2199,26 +2485,151 @@
                 const margin = 15;
                 
                 // PDF compression settings
-                const imageScale = 1.2;  // Reduced from 2 - still crisp but much smaller
-                const imageQuality = 0.7; // JPEG quality (0.0 to 1.0)
-                const imageFormat = 'JPEG'; // JPEG compresses much better than PNG
+                const imageScale = 1.2;
+                const imageQuality = 0.7;
+                const imageFormat = 'JPEG';
                 
-                // Title page
-                pdf.setFillColor(78, 205, 196);
-                pdf.rect(0, 0, pageWidth, 40, 'F');
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(28);
-                pdf.text('Lock Data Analytics Report', pageWidth / 2, 25, { align: 'center' });
-                
-                pdf.setTextColor(51, 51, 51);
-                pdf.setFontSize(12);
+                const stats = calculateDetailedStats(filteredData);
                 const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                pdf.text(`Generated: ${today}`, pageWidth / 2, 55, { align: 'center' });
-                pdf.text(`Total Records: ${filteredData.length.toLocaleString()}`, pageWidth / 2, 65, { align: 'center' });
                 
-                const stats = calculateStats(filteredData);
-                pdf.text(`Unique Sellers: ${stats.uniqueSellers} | Avg Rate: ${stats.avgRate}% | Avg Loan: $${stats.avgLoanAmount}`, pageWidth / 2, 75, { align: 'center' });
-
+                // Get date range
+                const dates = filteredData
+                    .map(row => parseDate(row[COLUMNS.lockDate]))
+                    .filter(d => d !== null)
+                    .sort((a, b) => a - b);
+                const minDate = dates.length > 0 ? formatDate(dates[0]) : 'N/A';
+                const maxDate = dates.length > 0 ? formatDate(dates[dates.length - 1]) : 'N/A';
+                
+                // ============ ENHANCED COVER PAGE ============
+                // Header bar
+                pdf.setFillColor(78, 205, 196);
+                pdf.rect(0, 0, pageWidth, 50, 'F');
+                
+                // Title
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(32);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Lock Data Analytics Report', pageWidth / 2, 30, { align: 'center' });
+                
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`Generated: ${today}`, pageWidth / 2, 42, { align: 'center' });
+                
+                // Date range section
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Report Period', margin, 65);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(11);
+                pdf.text(`${minDate}  to  ${maxDate}`, margin, 73);
+                
+                // Summary stats box
+                pdf.setFillColor(248, 249, 250);
+                pdf.roundedRect(margin, 82, pageWidth - (margin * 2), 45, 3, 3, 'F');
+                
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(68, 160, 141);
+                pdf.text('Portfolio Summary', margin + 10, 95);
+                
+                pdf.setFontSize(10);
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFont('helvetica', 'normal');
+                
+                // Row 1 of stats
+                const col1 = margin + 10;
+                const col2 = margin + 75;
+                const col3 = margin + 150;
+                const col4 = margin + 225;
+                
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Total Locks:', col1, 105);
+                pdf.text('Unique Sellers:', col2, 105);
+                pdf.text('Total Volume:', col3, 105);
+                pdf.text('Avg Loan Amount:', col4, 105);
+                
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(78, 205, 196);
+                pdf.text(stats.totalLocks.toLocaleString(), col1, 112);
+                pdf.text(stats.uniqueSellers.toLocaleString(), col2, 112);
+                pdf.text('$' + (stats.totalVolume / 1000000).toFixed(1) + 'M', col3, 112);
+                pdf.text('$' + stats.avgLoanAmt.toLocaleString(), col4, 112);
+                
+                // Row 2 of stats
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Lock Approved:', col1, 120);
+                pdf.text('Cancelled:', col2, 120);
+                pdf.text('Avg FICO:', col3, 120);
+                pdf.text('Avg LTV:', col4, 120);
+                
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(78, 205, 196);
+                pdf.text(stats.lockApproved.toLocaleString(), col1, 127);
+                pdf.setTextColor(255, 107, 107);
+                pdf.text(stats.cancelled.toLocaleString(), col2, 127);
+                pdf.setTextColor(78, 205, 196);
+                pdf.text(stats.avgFico.toString(), col3, 127);
+                pdf.text(stats.avgLTV + '%', col4, 127);
+                
+                // Credit Profile Section
+                pdf.setFillColor(248, 249, 250);
+                pdf.roundedRect(margin, 135, (pageWidth - (margin * 3)) / 2, 40, 3, 3, 'F');
+                
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(68, 160, 141);
+                pdf.text('Credit Profile', margin + 10, 147);
+                
+                pdf.setFontSize(10);
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`FICO Range: ${stats.minFico} - ${stats.maxFico}`, margin + 10, 157);
+                pdf.text(`LTV Range: ${stats.minLTV}% - ${stats.maxLTV}%`, margin + 10, 165);
+                pdf.text(`Rate Range: ${stats.minRate}% - ${stats.maxRate}%`, margin + 10, 173);
+                
+                // Occupancy Section
+                const rightBoxX = margin + (pageWidth - (margin * 3)) / 2 + margin;
+                pdf.setFillColor(248, 249, 250);
+                pdf.roundedRect(rightBoxX, 135, (pageWidth - (margin * 3)) / 2, 40, 3, 3, 'F');
+                
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(68, 160, 141);
+                pdf.text('Occupancy Breakdown', rightBoxX + 10, 147);
+                
+                pdf.setFontSize(10);
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFont('helvetica', 'normal');
+                
+                let occY = 157;
+                Object.entries(stats.occupancy).forEach(([type, count]) => {
+                    const pct = ((count / stats.totalLocks) * 100).toFixed(1);
+                    pdf.text(`${type}: ${count.toLocaleString()} (${pct}%)`, rightBoxX + 10, occY);
+                    occY += 8;
+                });
+                
+                // Top States Section
+                pdf.setFillColor(248, 249, 250);
+                pdf.roundedRect(margin, 183, pageWidth - (margin * 2), 20, 3, 3, 'F');
+                
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(68, 160, 141);
+                pdf.text('Top States', margin + 10, 195);
+                
+                pdf.setFontSize(10);
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFont('helvetica', 'normal');
+                
+                let stateX = margin + 80;
+                stats.topStates.forEach(([state, count], idx) => {
+                    const pct = ((count / stats.totalLocks) * 100).toFixed(1);
+                    pdf.text(`${idx + 1}. ${state}: ${count} (${pct}%)`, stateX, 195);
+                    stateX += 70;
+                });
+                
                 // Helper function to capture and add image with compression
                 async function captureAndAddImage(element, yOffset = 25) {
                     const canvas = await html2canvas(element, {
@@ -2228,7 +2639,6 @@
                         useCORS: true
                     });
                     
-                    // Convert to JPEG with compression
                     const imgData = canvas.toDataURL('image/jpeg', imageQuality);
                     const imgWidth = pageWidth - (margin * 2);
                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -2247,6 +2657,7 @@
                 pdf.rect(0, 0, pageWidth, 20, 'F');
                 pdf.setTextColor(255, 255, 255);
                 pdf.setFontSize(16);
+                pdf.setFont('helvetica', 'bold');
                 pdf.text('Status & Top Sellers Overview', pageWidth / 2, 13, { align: 'center' });
 
                 const specialCardsSection = document.getElementById('specialCardsSection');
@@ -2259,6 +2670,10 @@
                     { id: 'sellersChartContainer', title: 'Unique Sellers Per Month' },
                     { id: 'locksChartContainer', title: 'Total Locks Per Month' },
                     { id: 'fixedArmChartContainer', title: 'Fixed vs ARM Locks' },
+                    { id: 'ficoChartContainer', title: 'FICO Score Distribution' },
+                    { id: 'ltvChartContainer', title: 'LTV Distribution' },
+                    { id: 'dscrChartContainer', title: 'DSCR Distribution (DSCR Loans Only)' },
+                    { id: 'prepayChartContainer', title: 'Prepayment Term Distribution (Investment Only)' },
                     { id: 'purposeChartContainer', title: 'Loan Purpose Breakdown' },
                     { id: 'programChartContainer', title: 'Program Breakdown' },
                     { id: 'loanTypeChartContainer', title: 'Loan Type Breakdown' },
@@ -2273,14 +2688,13 @@
                     if (element) {
                         pdf.addPage();
                         
-                        // Page header
                         pdf.setFillColor(78, 205, 196);
                         pdf.rect(0, 0, pageWidth, 20, 'F');
                         pdf.setTextColor(255, 255, 255);
                         pdf.setFontSize(16);
+                        pdf.setFont('helvetica', 'bold');
                         pdf.text(config.title, pageWidth / 2, 13, { align: 'center' });
                         
-                        // Capture chart with compression
                         await captureAndAddImage(element);
                     }
                 }
@@ -2302,7 +2716,7 @@
             }
         }
 
-        console.log('Lock Data Analytics Dashboard v3.0 loaded successfully!');
+        console.log('Lock Data Analytics Dashboard v4.0 loaded successfully!');
     </script>
 </body>
 </html>
