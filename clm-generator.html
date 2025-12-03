@@ -67,7 +67,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller Name</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SellerCode</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Code</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Margin</th>
                             </tr>
@@ -284,9 +284,9 @@
 
                             clmData.push({
                                 'Seller Name': customer.sellerName,
-                                'Seller Code': customer.sellerCode,
+                                'SellerCode': customer.sellerCode,
                                 'Product Code': baseCode + ' DEL',
-                                'Margin': (-margin).toFixed(2)
+                                'Margin': margin.toFixed(2)
                             });
                         });
                     }
@@ -301,9 +301,9 @@
 
                             clmData.push({
                                 'Seller Name': customer.sellerName,
-                                'Seller Code': customer.sellerCode,
+                                'SellerCode': customer.sellerCode,
                                 'Product Code': baseCode + ' ND',
-                                'Margin': (-margin).toFixed(2)
+                                'Margin': margin.toFixed(2)
                             });
                         });
                     }
@@ -321,7 +321,7 @@
                     const badgeColor = isND ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
                     tr.innerHTML = `
                         <td class="px-4 py-3 text-sm text-gray-900">${row['Seller Name']}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">${row['Seller Code']}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">${row['SellerCode']}</td>
                         <td class="px-4 py-3 text-sm">
                             <span class="px-2 py-1 rounded-full text-xs font-medium ${badgeColor}">${row['Product Code']}</span>
                         </td>
@@ -345,7 +345,7 @@
                 const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
                 const filename = 'CLM_' + timestamp + '.csv';
 
-                const headers = ['Seller Name', 'Seller Code', 'Product Code', 'Margin'];
+                const headers = ['Seller Name', 'SellerCode', 'Product Code', 'Margin'];
                 const csvContent = [
                     headers.join(','),
                     ...clmData.map(row => 
