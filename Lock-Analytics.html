@@ -235,6 +235,173 @@
             background: rgba(255, 68, 68, 0.1);
         }
 
+        /* ============ NEW: Primary Buyer/Seller Filter Styles ============ */
+        .primary-filters {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px 30px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #4ECDC4;
+        }
+
+        .primary-filters h2 {
+            color: #333;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .primary-filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .primary-filter-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .primary-filter-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #4ECDC4;
+            border-radius: 10px;
+            background: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .primary-filter-select:focus {
+            outline: none;
+            border-color: #44A08D;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.3);
+        }
+
+        /* ============ NEW: Context Banner ============ */
+        .context-banner {
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .context-banner-text {
+            font-weight: 500;
+            font-size: 1.05em;
+        }
+
+        .context-banner-clear {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .context-banner-clear:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ============ NEW: Buyer Overview Cards ============ */
+        .buyer-overview {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #44A08D;
+        }
+
+        .buyer-overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .buyer-overview-title {
+            font-size: 1.4em;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .buyer-overview-subtitle {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .buyer-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .buyer-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .buyer-card:hover {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1) 0%, rgba(68, 160, 141, 0.1) 100%);
+            border-color: #4ECDC4;
+            transform: translateY(-2px);
+        }
+
+        .buyer-card.selected {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.2) 0%, rgba(68, 160, 141, 0.2) 100%);
+            border-color: #44A08D;
+        }
+
+        .buyer-card-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .buyer-card-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+        }
+
+        .buyer-card-locks {
+            color: #44A08D;
+            font-weight: bold;
+        }
+
+        .buyer-card-sellers {
+            color: #666;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -329,6 +496,16 @@
             color: #333;
             font-size: 1.3em;
             font-weight: 600;
+        }
+
+        .special-card-context {
+            color: #44A08D;
+            font-size: 0.85em;
+            font-weight: 500;
+            margin-left: auto;
+            background: rgba(78, 205, 196, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
         }
 
         /* Status Card Styles */
@@ -858,6 +1035,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .primary-filter-grid {
+                grid-template-columns: 1fr;
+            }
+
             .header {
                 flex-direction: column;
                 text-align: center;
@@ -869,6 +1050,10 @@
 
             .features-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .buyer-cards-grid {
+                grid-template-columns: 1fr 1fr;
             }
         }
 
@@ -890,7 +1075,7 @@
         <div class="header">
             <div class="header-left">
                 <h1>🔒 Lock Data Analytics Dashboard</h1>
-                <p class="subtitle">Upload monthly lock reports to analyze and slice data across multiple dimensions</p>
+                <p class="subtitle">Upload monthly lock reports to analyze and slice data across buyers, sellers, and multiple dimensions</p>
             </div>
             <div class="header-actions hidden" id="headerActions">
                 <button class="btn btn-pdf" onclick="exportToPDF()">📄 Export Charts to PDF</button>
@@ -915,14 +1100,14 @@
 
             <div class="features-grid">
                 <div class="feature-item">
-                    <div class="feature-icon">📈</div>
-                    <div class="feature-title">Trend Analysis</div>
-                    <div class="feature-desc">Identify patterns in rates, loan amounts, and LTV ratios across time periods</div>
+                    <div class="feature-icon">🏢</div>
+                    <div class="feature-title">Multi-Buyer Support</div>
+                    <div class="feature-desc">Analyze data across multiple investors and filter by buyer</div>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-icon">🏢</div>
+                    <div class="feature-icon">👥</div>
                     <div class="feature-title">Seller Tracking</div>
-                    <div class="feature-desc">Track unique seller activity month-over-month</div>
+                    <div class="feature-desc">Track unique seller activity by buyer month-over-month</div>
                 </div>
                 <div class="feature-item">
                     <div class="feature-icon">🗺️</div>
@@ -930,9 +1115,9 @@
                     <div class="feature-desc">Analyze loan distribution across all 50 states with interactive visualizations</div>
                 </div>
                 <div class="feature-item">
-                    <div class="feature-icon">💰</div>
-                    <div class="feature-title">Performance Metrics</div>
-                    <div class="feature-desc">Track purchase vs refinance trends, program breakdown, and more</div>
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-title">Risk Analysis</div>
+                    <div class="feature-desc">FICO, LTV, and DSCR distributions with status breakdown</div>
                 </div>
                 <div class="feature-item">
                     <div class="feature-icon">📄</div>
@@ -948,6 +1133,45 @@
             </div>
         </div>
 
+        <!-- NEW: Context Banner (shows when buyer/seller filtered) -->
+        <div id="contextBanner" class="context-banner hidden">
+            <span class="context-banner-text" id="contextBannerText"></span>
+            <button class="context-banner-clear" onclick="clearPrimaryFilters()">✕ Clear Selection</button>
+        </div>
+
+        <!-- NEW: Primary Buyer/Seller Filters -->
+        <div id="primaryFilters" class="primary-filters hidden">
+            <h2>🎯 Filter by Buyer & Seller</h2>
+            <div class="primary-filter-grid">
+                <div class="primary-filter-group">
+                    <label>Buyer (Investor / Lender)</label>
+                    <select class="primary-filter-select" id="buyerFilter" onchange="onBuyerChange()">
+                        <option value="">All Buyers</option>
+                    </select>
+                </div>
+                <div class="primary-filter-group">
+                    <label>Seller (Originator)</label>
+                    <select class="primary-filter-select" id="sellerFilter" onchange="onSellerChange()">
+                        <option value="">All Sellers</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="applyPrimaryFilters()">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Buyer Overview Cards -->
+        <div id="buyerOverview" class="buyer-overview hidden">
+            <div class="buyer-overview-header">
+                <div>
+                    <div class="buyer-overview-title">📊 Buyer Overview</div>
+                    <div class="buyer-overview-subtitle">Click a buyer card to filter, or use the dropdown above</div>
+                </div>
+            </div>
+            <div class="buyer-cards-grid" id="buyerCardsGrid"></div>
+        </div>
+
         <div id="dateInfo" class="date-info hidden"></div>
 
         <div id="statsSection" class="hidden">
@@ -960,6 +1184,7 @@
                 <div class="special-card-header">
                     <span class="special-card-icon">📊</span>
                     <span class="special-card-title">Lock Status Breakdown</span>
+                    <span class="special-card-context" id="statusContext"></span>
                 </div>
                 <div id="statusContent"></div>
             </div>
@@ -967,13 +1192,14 @@
                 <div class="special-card-header">
                     <span class="special-card-icon">🏆</span>
                     <span class="special-card-title">Top 10 Sellers by Lock Volume</span>
+                    <span class="special-card-context" id="sellersContext"></span>
                 </div>
                 <div id="topSellersContent"></div>
             </div>
         </div>
 
         <div id="filtersSection" class="filters-section hidden">
-            <h2 style="margin-bottom: 20px; color: #333;">🎯 Filter Data</h2>
+            <h2 style="margin-bottom: 20px; color: #333;">🔍 Additional Filters</h2>
             <div class="filter-grid" id="filterGrid"></div>
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
@@ -1025,9 +1251,14 @@
         let charts = {};
         let activeFilters = {};
         let uploadedFiles = [];
+        
+        // NEW: Track selected buyer/seller
+        let selectedBuyer = '';
+        let selectedSeller = '';
 
         // Column mappings - adjust these if column names differ
         const COLUMNS = {
+            buyer: 'Investor / Lender DBA Name',  // NEW: Buyer column
             seller: 'Originator Dba Name',
             lockDate: 'Lock Approved Date',
             purpose: 'Purpose',
@@ -1193,6 +1424,10 @@
         function processData() {
             filteredData = [...rawData];
             
+            // NEW: Setup primary buyer/seller filters
+            setupPrimaryFilters();
+            displayBuyerOverview();
+            
             displayDateRange();
             displayInitialStats();
             displayStatusCard();
@@ -1202,12 +1437,171 @@
             displayTable();
             
             // Show all sections
+            document.getElementById('primaryFilters').classList.remove('hidden');
+            // Only show buyer overview if multiple buyers exist
+            const uniqueBuyers = new Set(rawData.map(r => r[COLUMNS.buyer]).filter(Boolean));
+            if (uniqueBuyers.size > 1) {
+                document.getElementById('buyerOverview').classList.remove('hidden');
+            }
             document.getElementById('statsSection').classList.remove('hidden');
             document.getElementById('specialCardsSection').classList.remove('hidden');
             document.getElementById('filtersSection').classList.remove('hidden');
             document.getElementById('chartsContainer').classList.remove('hidden');
             document.getElementById('tableSection').classList.remove('hidden');
         }
+
+        // ============ NEW: Primary Filter Functions ============
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function setupPrimaryFilters() {
+            const buyers = [...new Set(rawData.map(r => r[COLUMNS.buyer]).filter(Boolean))].sort();
+            const buyerSelect = document.getElementById('buyerFilter');
+            
+            buyerSelect.innerHTML = `<option value="">All Buyers (${buyers.length})</option>` +
+                buyers.map(b => {
+                    const count = rawData.filter(r => r[COLUMNS.buyer] === b).length;
+                    return `<option value="${escapeHtml(b)}">${escapeHtml(b)} (${count.toLocaleString()})</option>`;
+                }).join('');
+
+            updateSellerDropdown();
+        }
+
+        function updateSellerDropdown() {
+            const dataForSellers = selectedBuyer 
+                ? rawData.filter(r => r[COLUMNS.buyer] === selectedBuyer)
+                : rawData;
+            
+            const sellers = [...new Set(dataForSellers.map(r => r[COLUMNS.seller]).filter(Boolean))].sort();
+            const sellerSelect = document.getElementById('sellerFilter');
+            
+            sellerSelect.innerHTML = `<option value="">All Sellers (${sellers.length})</option>` +
+                sellers.map(s => {
+                    const count = dataForSellers.filter(r => r[COLUMNS.seller] === s).length;
+                    return `<option value="${escapeHtml(s)}">${escapeHtml(s)} (${count.toLocaleString()})</option>`;
+                }).join('');
+        }
+
+        function onBuyerChange() {
+            selectedBuyer = document.getElementById('buyerFilter').value;
+            selectedSeller = '';
+            document.getElementById('sellerFilter').value = '';
+            updateSellerDropdown();
+        }
+
+        function onSellerChange() {
+            selectedSeller = document.getElementById('sellerFilter').value;
+        }
+
+        function applyPrimaryFilters() {
+            showLoading('Applying filters...');
+            
+            setTimeout(() => {
+                // Start with raw data and apply buyer/seller filters
+                filteredData = rawData.filter(row => {
+                    if (selectedBuyer && row[COLUMNS.buyer] !== selectedBuyer) return false;
+                    if (selectedSeller && row[COLUMNS.seller] !== selectedSeller) return false;
+                    return true;
+                });
+                
+                updateContextBanner();
+                refreshAllDisplays();
+                hideLoading();
+            }, 50);
+        }
+
+        function clearPrimaryFilters() {
+            selectedBuyer = '';
+            selectedSeller = '';
+            document.getElementById('buyerFilter').value = '';
+            document.getElementById('sellerFilter').value = '';
+            updateSellerDropdown();
+            
+            filteredData = [...rawData];
+            updateContextBanner();
+            refreshAllDisplays();
+        }
+
+        function selectBuyerFromCard(buyer) {
+            selectedBuyer = buyer;
+            selectedSeller = '';
+            document.getElementById('buyerFilter').value = buyer;
+            document.getElementById('sellerFilter').value = '';
+            updateSellerDropdown();
+            applyPrimaryFilters();
+        }
+
+        function updateContextBanner() {
+            const banner = document.getElementById('contextBanner');
+            const text = document.getElementById('contextBannerText');
+            
+            if (selectedBuyer || selectedSeller) {
+                let msg = '📌 Viewing: ';
+                if (selectedBuyer) msg += selectedBuyer;
+                if (selectedSeller) msg += (selectedBuyer ? ' → ' : '') + selectedSeller;
+                msg += ` (${filteredData.length.toLocaleString()} locks)`;
+                text.textContent = msg;
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function displayBuyerOverview() {
+            const grid = document.getElementById('buyerCardsGrid');
+            const buyerStats = {};
+            
+            // Calculate stats for each buyer from raw data
+            rawData.forEach(row => {
+                const buyer = row[COLUMNS.buyer] || 'Unknown';
+                if (!buyerStats[buyer]) {
+                    buyerStats[buyer] = { count: 0, sellers: new Set() };
+                }
+                buyerStats[buyer].count++;
+                if (row[COLUMNS.seller]) {
+                    buyerStats[buyer].sellers.add(row[COLUMNS.seller]);
+                }
+            });
+
+            // Sort by count descending
+            const sorted = Object.entries(buyerStats).sort((a, b) => b[1].count - a[1].count);
+            
+            // Only show if we have multiple buyers
+            if (sorted.length <= 1) {
+                document.getElementById('buyerOverview').classList.add('hidden');
+                return;
+            }
+            
+            // Show top 12 buyer cards
+            grid.innerHTML = sorted.slice(0, 12).map(([buyer, stats]) => `
+                <div class="buyer-card ${selectedBuyer === buyer ? 'selected' : ''}" 
+                     onclick="selectBuyerFromCard('${escapeHtml(buyer).replace(/'/g, "\\'")}')"
+                     title="${escapeHtml(buyer)}">
+                    <div class="buyer-card-name">${escapeHtml(buyer)}</div>
+                    <div class="buyer-card-stats">
+                        <span class="buyer-card-locks">${stats.count.toLocaleString()} locks</span>
+                        <span class="buyer-card-sellers">${stats.sellers.size} sellers</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function refreshAllDisplays() {
+            displayBuyerOverview();
+            displayDateRange();
+            displayInitialStats();
+            displayStatusCard();
+            displayTopSellersCard();
+            setupFilters();
+            displayAllCharts();
+            displayTable();
+        }
+
+        // ============ End Primary Filter Functions ============
 
         function displayDateRange() {
             const dateInfo = document.getElementById('dateInfo');
@@ -1228,11 +1622,14 @@
             const statsGrid = document.getElementById('statsGrid');
             const stats = calculateStats(filteredData);
             
+            // NEW: Add buyers count
+            const uniqueBuyers = new Set(filteredData.map(row => row[COLUMNS.buyer]).filter(Boolean)).size;
+            
             const statCards = [
                 { label: 'Total Locks', value: stats.totalLocks.toLocaleString(), detail: 'Total records' },
-                { label: 'Unique Sellers', value: stats.uniqueSellers.toLocaleString(), detail: 'Active originators' },
+                { label: 'Buyers', value: uniqueBuyers.toLocaleString(), detail: 'Unique investors' },
+                { label: 'Sellers', value: stats.uniqueSellers.toLocaleString(), detail: 'Unique originators' },
                 { label: 'Purchase', value: stats.purchasePercent + '%', detail: stats.purchaseCount.toLocaleString() + ' locks' },
-                { label: 'Refinance', value: stats.refiPercent + '%', detail: stats.refiCount.toLocaleString() + ' locks' },
                 { label: 'Avg FICO', value: stats.avgFico, detail: 'Credit score' },
                 { label: 'Avg LTV', value: stats.avgLTV + '%', detail: 'Loan to value' }
             ];
@@ -1251,6 +1648,7 @@
 
         function displayStatusCard() {
             const statusContent = document.getElementById('statusContent');
+            const statusContext = document.getElementById('statusContext');
             const statusCounts = getValueCounts(filteredData, COLUMNS.status);
             
             // Sort by count descending
@@ -1264,6 +1662,10 @@
             
             // Other statuses
             const otherStatuses = sorted.filter(([status]) => status !== 'Lock Approved');
+            
+            // NEW: Update context label
+            statusContext.textContent = selectedBuyer ? `for ${selectedBuyer}` : '';
+            statusContext.style.display = selectedBuyer ? 'inline-block' : 'none';
             
             let html = `
                 <div class="status-main">
@@ -1303,6 +1705,7 @@
 
         function displayTopSellersCard() {
             const topSellersContent = document.getElementById('topSellersContent');
+            const sellersContext = document.getElementById('sellersContext');
             const sellerCounts = getValueCounts(filteredData, COLUMNS.seller);
             
             // Sort by count and take top 10
@@ -1311,6 +1714,10 @@
                 .slice(0, 10);
             
             const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+            
+            // NEW: Update context label
+            sellersContext.textContent = selectedBuyer ? `for ${selectedBuyer}` : '';
+            sellersContext.style.display = selectedBuyer ? 'inline-block' : 'none';
             
             let html = '<div class="sellers-list">';
             
@@ -1390,6 +1797,7 @@
             const rates = data.map(r => parseFloat(r[COLUMNS.rate])).filter(v => !isNaN(v));
             const loanAmounts = data.map(r => parseFloat(r[COLUMNS.loanAmount])).filter(v => !isNaN(v));
             
+            stats.uniqueBuyers = new Set(data.map(r => r[COLUMNS.buyer]).filter(Boolean)).size;
             stats.minFico = ficos.length > 0 ? Math.min(...ficos) : 'N/A';
             stats.maxFico = ficos.length > 0 ? Math.max(...ficos) : 'N/A';
             stats.minLTV = ltvs.length > 0 ? (Math.min(...ltvs) * 100).toFixed(1) : 'N/A';
@@ -1409,6 +1817,16 @@
             const topStates = Object.entries(stateCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
             stats.topStates = topStates;
             
+            // Top buyers (NEW)
+            const buyerCounts = getValueCounts(data, COLUMNS.buyer);
+            const topBuyers = Object.entries(buyerCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            stats.topBuyers = topBuyers;
+            
+            // Top sellers
+            const sellerCounts = getValueCounts(data, COLUMNS.seller);
+            const topSellers = Object.entries(sellerCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            stats.topSellers = topSellers;
+            
             // Occupancy breakdown
             const occupancyCounts = getValueCounts(data, COLUMNS.occupancy);
             stats.occupancy = occupancyCounts;
@@ -1419,12 +1837,11 @@
         function setupFilters() {
             const filterGrid = document.getElementById('filterGrid');
             
-            // Get unique values for each filter dimension
+            // Get unique values for each filter dimension from current filtered data
             const purposes = [...new Set(filteredData.map(r => r[COLUMNS.purpose]).filter(Boolean))].sort();
             const programs = [...new Set(filteredData.map(r => r[COLUMNS.program]).filter(Boolean))].sort();
             const loanTypes = [...new Set(filteredData.map(r => r[COLUMNS.loanType]).filter(Boolean))].sort();
             const states = [...new Set(filteredData.map(r => r[COLUMNS.state]).filter(Boolean))].sort();
-            const sellers = [...new Set(filteredData.map(r => r[COLUMNS.seller]).filter(Boolean))].sort();
             const statuses = [...new Set(filteredData.map(r => r[COLUMNS.status]).filter(Boolean))].sort();
 
             filterGrid.innerHTML = `
@@ -1454,13 +1871,6 @@
                     <select class="filter-select" id="filterState">
                         <option value="">All States</option>
                         ${states.map(s => `<option value="${s}">${s}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Seller</label>
-                    <select class="filter-select" id="filterSeller">
-                        <option value="">All Sellers</option>
-                        ${sellers.map(s => `<option value="${s}">${s}</option>`).join('')}
                     </select>
                 </div>
                 <div class="filter-group">
@@ -1513,7 +1923,7 @@
             trendSection.appendChild(fixedArmContainer);
             createFixedArmChart();
 
-            // --- RISK CHARTS (NEW) ---
+            // --- RISK CHARTS ---
             const ficoContainer = createChartContainer('FICO Score Distribution', 'ficoChart');
             riskSection.appendChild(ficoContainer);
             createFicoChart();
@@ -1566,7 +1976,7 @@
             return container;
         }
 
-        // NEW: FICO Distribution Chart
+        // FICO Distribution Chart
         function createFicoChart() {
             const ctx = document.getElementById('ficoChart').getContext('2d');
             const ficos = filteredData
@@ -1647,7 +2057,7 @@
             });
         }
 
-        // NEW: LTV Distribution Chart
+        // LTV Distribution Chart
         function createLtvChart() {
             const ctx = document.getElementById('ltvChart').getContext('2d');
             const ltvs = filteredData
@@ -1715,7 +2125,7 @@
             });
         }
 
-        // NEW: DSCR Distribution Chart (DSCR loans only, by status)
+        // DSCR Distribution Chart (DSCR loans only, by status)
         function createDscrChart() {
             const ctx = document.getElementById('dscrChart').getContext('2d');
             
@@ -1793,7 +2203,7 @@
             });
         }
 
-        // NEW: Prepayment Term Distribution (Investment only)
+        // Prepayment Term Distribution (Investment only)
         function createPrepayChart() {
             const ctx = document.getElementById('prepayChart').getContext('2d');
             
@@ -2332,12 +2742,11 @@
                 <thead>
                     <tr>
                         <th>Lock ID</th>
+                        <th>Buyer</th>
                         <th>Seller</th>
                         <th>Lock Date</th>
                         <th>Status</th>
                         <th>State</th>
-                        <th>Purpose</th>
-                        <th>Program</th>
                         <th>FICO</th>
                         <th>LTV</th>
                         <th>Rate</th>
@@ -2353,12 +2762,11 @@
                 
                 html += `<tr>
                     <td>${row[COLUMNS.lockId] || '-'}</td>
-                    <td>${truncateLabel(row[COLUMNS.seller] || '-', 30)}</td>
+                    <td title="${row[COLUMNS.buyer] || ''}">${truncateLabel(row[COLUMNS.buyer] || '-', 20)}</td>
+                    <td title="${row[COLUMNS.seller] || ''}">${truncateLabel(row[COLUMNS.seller] || '-', 25)}</td>
                     <td>${lockDate ? formatDate(lockDate) : '-'}</td>
                     <td>${row[COLUMNS.status] || '-'}</td>
                     <td>${row[COLUMNS.state] || '-'}</td>
-                    <td>${row[COLUMNS.purpose] || '-'}</td>
-                    <td>${truncateLabel(row[COLUMNS.program] || '-', 25)}</td>
                     <td>${row[COLUMNS.creditScore] || '-'}</td>
                     <td>${ltvDisplay}</td>
                     <td>${row[COLUMNS.rate] || '-'}</td>
@@ -2375,6 +2783,7 @@
         function updateSummaryStats() {
             const summaryStats = document.getElementById('summaryStats');
             const stats = calculateStats(filteredData);
+            const uniqueBuyers = new Set(filteredData.map(row => row[COLUMNS.buyer]).filter(Boolean)).size;
             
             summaryStats.innerHTML = `
                 <div class="summary-stat">
@@ -2382,7 +2791,11 @@
                     <span class="summary-stat-value">${stats.totalLocks.toLocaleString()}</span>
                 </div>
                 <div class="summary-stat">
-                    <span class="summary-stat-label">Unique Sellers:</span>
+                    <span class="summary-stat-label">Buyers:</span>
+                    <span class="summary-stat-value">${uniqueBuyers}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="summary-stat-label">Sellers:</span>
                     <span class="summary-stat-value">${stats.uniqueSellers}</span>
                 </div>
                 <div class="summary-stat">
@@ -2404,17 +2817,20 @@
                 const programFilter = document.getElementById('filterProgram').value;
                 const loanTypeFilter = document.getElementById('filterLoanType').value;
                 const stateFilter = document.getElementById('filterState').value;
-                const sellerFilter = document.getElementById('filterSeller').value;
                 const statusFilter = document.getElementById('filterStatus').value;
                 const dateFrom = document.getElementById('filterDateFrom').value;
                 const dateTo = document.getElementById('filterDateTo').value;
                 
-                filteredData = rawData.filter(row => {
+                // Start with data filtered by buyer/seller
+                let baseData = rawData;
+                if (selectedBuyer) baseData = baseData.filter(r => r[COLUMNS.buyer] === selectedBuyer);
+                if (selectedSeller) baseData = baseData.filter(r => r[COLUMNS.seller] === selectedSeller);
+                
+                filteredData = baseData.filter(row => {
                     if (purposeFilter && row[COLUMNS.purpose] !== purposeFilter) return false;
                     if (programFilter && row[COLUMNS.program] !== programFilter) return false;
                     if (loanTypeFilter && row[COLUMNS.loanType] !== loanTypeFilter) return false;
                     if (stateFilter && row[COLUMNS.state] !== stateFilter) return false;
-                    if (sellerFilter && row[COLUMNS.seller] !== sellerFilter) return false;
                     if (statusFilter && row[COLUMNS.status] !== statusFilter) return false;
                     
                     if (dateFrom || dateTo) {
@@ -2443,12 +2859,16 @@
             document.getElementById('filterProgram').value = '';
             document.getElementById('filterLoanType').value = '';
             document.getElementById('filterState').value = '';
-            document.getElementById('filterSeller').value = '';
             document.getElementById('filterStatus').value = '';
             document.getElementById('filterDateFrom').value = '';
             document.getElementById('filterDateTo').value = '';
             
-            filteredData = [...rawData];
+            // Respect buyer/seller selection
+            let baseData = rawData;
+            if (selectedBuyer) baseData = baseData.filter(r => r[COLUMNS.buyer] === selectedBuyer);
+            if (selectedSeller) baseData = baseData.filter(r => r[COLUMNS.seller] === selectedSeller);
+            filteredData = baseData;
+            
             displayDateRange();
             displayInitialStats();
             displayStatusCard();
@@ -2515,23 +2935,36 @@
                 pdf.setFont('helvetica', 'normal');
                 pdf.text(`Generated: ${today}`, pageWidth / 2, 42, { align: 'center' });
                 
+                // NEW: Show filter context if buyer/seller selected
+                let yOffset = 60;
+                if (selectedBuyer || selectedSeller) {
+                    pdf.setTextColor(68, 160, 141);
+                    pdf.setFontSize(14);
+                    pdf.setFont('helvetica', 'bold');
+                    let filterText = 'Filtered: ';
+                    if (selectedBuyer) filterText += selectedBuyer;
+                    if (selectedSeller) filterText += (selectedBuyer ? ' → ' : '') + selectedSeller;
+                    pdf.text(filterText, pageWidth / 2, yOffset, { align: 'center' });
+                    yOffset += 10;
+                }
+                
                 // Date range section
                 pdf.setTextColor(51, 51, 51);
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('Report Period', margin, 65);
+                pdf.text('Report Period', margin, yOffset + 5);
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(11);
-                pdf.text(`${minDate}  to  ${maxDate}`, margin, 73);
+                pdf.text(`${minDate}  to  ${maxDate}`, margin, yOffset + 13);
                 
                 // Summary stats box
                 pdf.setFillColor(248, 249, 250);
-                pdf.roundedRect(margin, 82, pageWidth - (margin * 2), 45, 3, 3, 'F');
+                pdf.roundedRect(margin, yOffset + 22, pageWidth - (margin * 2), 45, 3, 3, 'F');
                 
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(68, 160, 141);
-                pdf.text('Portfolio Summary', margin + 10, 95);
+                pdf.text('Portfolio Summary', margin + 10, yOffset + 35);
                 
                 pdf.setFontSize(10);
                 pdf.setTextColor(51, 51, 51);
@@ -2544,94 +2977,140 @@
                 const col4 = margin + 225;
                 
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('Total Locks:', col1, 105);
-                pdf.text('Unique Sellers:', col2, 105);
-                pdf.text('Total Volume:', col3, 105);
-                pdf.text('Avg Loan Amount:', col4, 105);
+                pdf.text('Total Locks:', col1, yOffset + 45);
+                pdf.text('Unique Buyers:', col2, yOffset + 45);
+                pdf.text('Unique Sellers:', col3, yOffset + 45);
+                pdf.text('Total Volume:', col4, yOffset + 45);
                 
                 pdf.setFont('helvetica', 'normal');
                 pdf.setTextColor(78, 205, 196);
-                pdf.text(stats.totalLocks.toLocaleString(), col1, 112);
-                pdf.text(stats.uniqueSellers.toLocaleString(), col2, 112);
-                pdf.text('$' + (stats.totalVolume / 1000000).toFixed(1) + 'M', col3, 112);
-                pdf.text('$' + stats.avgLoanAmt.toLocaleString(), col4, 112);
+                pdf.text(stats.totalLocks.toLocaleString(), col1, yOffset + 52);
+                pdf.text(stats.uniqueBuyers.toLocaleString(), col2, yOffset + 52);
+                pdf.text(stats.uniqueSellers.toLocaleString(), col3, yOffset + 52);
+                pdf.text('$' + (stats.totalVolume / 1000000).toFixed(1) + 'M', col4, yOffset + 52);
                 
                 // Row 2 of stats
                 pdf.setTextColor(51, 51, 51);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('Lock Approved:', col1, 120);
-                pdf.text('Cancelled:', col2, 120);
-                pdf.text('Avg FICO:', col3, 120);
-                pdf.text('Avg LTV:', col4, 120);
+                pdf.text('Lock Approved:', col1, yOffset + 60);
+                pdf.text('Cancelled:', col2, yOffset + 60);
+                pdf.text('Avg FICO:', col3, yOffset + 60);
+                pdf.text('Avg LTV:', col4, yOffset + 60);
                 
                 pdf.setFont('helvetica', 'normal');
                 pdf.setTextColor(78, 205, 196);
-                pdf.text(stats.lockApproved.toLocaleString(), col1, 127);
+                pdf.text(stats.lockApproved.toLocaleString(), col1, yOffset + 67);
                 pdf.setTextColor(255, 107, 107);
-                pdf.text(stats.cancelled.toLocaleString(), col2, 127);
+                pdf.text(stats.cancelled.toLocaleString(), col2, yOffset + 67);
                 pdf.setTextColor(78, 205, 196);
-                pdf.text(stats.avgFico.toString(), col3, 127);
-                pdf.text(stats.avgLTV + '%', col4, 127);
+                pdf.text(stats.avgFico.toString(), col3, yOffset + 67);
+                pdf.text(stats.avgLTV + '%', col4, yOffset + 67);
                 
                 // Credit Profile Section
+                const boxY = yOffset + 75;
                 pdf.setFillColor(248, 249, 250);
-                pdf.roundedRect(margin, 135, (pageWidth - (margin * 3)) / 2, 40, 3, 3, 'F');
+                pdf.roundedRect(margin, boxY, (pageWidth - (margin * 3)) / 2, 40, 3, 3, 'F');
                 
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(68, 160, 141);
-                pdf.text('Credit Profile', margin + 10, 147);
+                pdf.text('Credit Profile', margin + 10, boxY + 12);
                 
                 pdf.setFontSize(10);
                 pdf.setTextColor(51, 51, 51);
                 pdf.setFont('helvetica', 'normal');
-                pdf.text(`FICO Range: ${stats.minFico} - ${stats.maxFico}`, margin + 10, 157);
-                pdf.text(`LTV Range: ${stats.minLTV}% - ${stats.maxLTV}%`, margin + 10, 165);
-                pdf.text(`Rate Range: ${stats.minRate}% - ${stats.maxRate}%`, margin + 10, 173);
+                pdf.text(`FICO Range: ${stats.minFico} - ${stats.maxFico}`, margin + 10, boxY + 22);
+                pdf.text(`LTV Range: ${stats.minLTV}% - ${stats.maxLTV}%`, margin + 10, boxY + 30);
+                pdf.text(`Rate Range: ${stats.minRate}% - ${stats.maxRate}%`, margin + 10, boxY + 38);
                 
                 // Occupancy Section
                 const rightBoxX = margin + (pageWidth - (margin * 3)) / 2 + margin;
                 pdf.setFillColor(248, 249, 250);
-                pdf.roundedRect(rightBoxX, 135, (pageWidth - (margin * 3)) / 2, 40, 3, 3, 'F');
+                pdf.roundedRect(rightBoxX, boxY, (pageWidth - (margin * 3)) / 2, 40, 3, 3, 'F');
                 
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(68, 160, 141);
-                pdf.text('Occupancy Breakdown', rightBoxX + 10, 147);
+                pdf.text('Occupancy Breakdown', rightBoxX + 10, boxY + 12);
                 
                 pdf.setFontSize(10);
                 pdf.setTextColor(51, 51, 51);
                 pdf.setFont('helvetica', 'normal');
                 
-                let occY = 157;
-                Object.entries(stats.occupancy).forEach(([type, count]) => {
+                let occY = boxY + 22;
+                Object.entries(stats.occupancy).slice(0, 3).forEach(([type, count]) => {
                     const pct = ((count / stats.totalLocks) * 100).toFixed(1);
                     pdf.text(`${type}: ${count.toLocaleString()} (${pct}%)`, rightBoxX + 10, occY);
                     occY += 8;
                 });
                 
-                // Top States Section
+                // Top States & Buyers/Sellers Section
+                const bottomBoxY = boxY + 48;
                 pdf.setFillColor(248, 249, 250);
-                pdf.roundedRect(margin, 183, pageWidth - (margin * 2), 20, 3, 3, 'F');
+                pdf.roundedRect(margin, bottomBoxY, (pageWidth - (margin * 3)) / 2, 30, 3, 3, 'F');
                 
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(68, 160, 141);
-                pdf.text('Top States', margin + 10, 195);
+                pdf.text('Top States', margin + 10, bottomBoxY + 12);
                 
-                pdf.setFontSize(10);
+                pdf.setFontSize(9);
                 pdf.setTextColor(51, 51, 51);
                 pdf.setFont('helvetica', 'normal');
                 
-                let stateX = margin + 80;
+                let stateX = margin + 10;
                 stats.topStates.forEach(([state, count], idx) => {
                     const pct = ((count / stats.totalLocks) * 100).toFixed(1);
-                    pdf.text(`${idx + 1}. ${state}: ${count} (${pct}%)`, stateX, 195);
-                    stateX += 70;
+                    pdf.text(`${idx + 1}. ${state}: ${count} (${pct}%)`, stateX, bottomBoxY + 22);
+                    stateX += 55;
                 });
                 
+                // Top Buyers (if not filtered to single buyer)
+                if (!selectedBuyer && stats.topBuyers && stats.topBuyers.length > 1) {
+                    pdf.setFillColor(248, 249, 250);
+                    pdf.roundedRect(rightBoxX, bottomBoxY, (pageWidth - (margin * 3)) / 2, 30, 3, 3, 'F');
+                    
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(68, 160, 141);
+                    pdf.text('Top Buyers', rightBoxX + 10, bottomBoxY + 12);
+                    
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(51, 51, 51);
+                    pdf.setFont('helvetica', 'normal');
+                    
+                    let buyerY = bottomBoxY + 20;
+                    stats.topBuyers.slice(0, 3).forEach(([buyer, count], idx) => {
+                        const pct = ((count / stats.totalLocks) * 100).toFixed(1);
+                        const displayBuyer = buyer.length > 25 ? buyer.substring(0, 23) + '...' : buyer;
+                        pdf.text(`${idx + 1}. ${displayBuyer}: ${count.toLocaleString()} (${pct}%)`, rightBoxX + 10, buyerY);
+                        buyerY += 6;
+                    });
+                } else {
+                    // Show Top Sellers instead when buyer is selected
+                    pdf.setFillColor(248, 249, 250);
+                    pdf.roundedRect(rightBoxX, bottomBoxY, (pageWidth - (margin * 3)) / 2, 30, 3, 3, 'F');
+                    
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(68, 160, 141);
+                    pdf.text('Top Sellers', rightBoxX + 10, bottomBoxY + 12);
+                    
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(51, 51, 51);
+                    pdf.setFont('helvetica', 'normal');
+                    
+                    let sellerY = bottomBoxY + 20;
+                    stats.topSellers.slice(0, 3).forEach(([seller, count], idx) => {
+                        const pct = ((count / stats.totalLocks) * 100).toFixed(1);
+                        const displaySeller = seller.length > 25 ? seller.substring(0, 23) + '...' : seller;
+                        pdf.text(`${idx + 1}. ${displaySeller}: ${count.toLocaleString()} (${pct}%)`, rightBoxX + 10, sellerY);
+                        sellerY += 6;
+                    });
+                }
+                
                 // Helper function to capture and add image with compression
-                async function captureAndAddImage(element, yOffset = 25) {
+                async function captureAndAddImage(element, chartYOffset = 25) {
                     const canvas = await html2canvas(element, {
                         scale: imageScale,
                         backgroundColor: '#ffffff',
@@ -2648,7 +3127,7 @@
                     const finalWidth = (finalHeight === maxHeight) ? (canvas.width * finalHeight) / canvas.height : imgWidth;
                     
                     const xPos = (pageWidth - finalWidth) / 2;
-                    pdf.addImage(imgData, imageFormat, xPos, yOffset, finalWidth, finalHeight, undefined, 'FAST');
+                    pdf.addImage(imgData, imageFormat, xPos, chartYOffset, finalWidth, finalHeight, undefined, 'FAST');
                 }
 
                 // Add Status and Top Sellers cards
@@ -2716,7 +3195,7 @@
             }
         }
 
-        console.log('Lock Data Analytics Dashboard v4.0 loaded successfully!');
+        console.log('Lock Data Analytics Dashboard v5.0 loaded successfully!');
     </script>
 </body>
 </html>
