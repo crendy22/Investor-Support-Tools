@@ -109,6 +109,7 @@
         .btn-secondary { background: white; color: #4ECDC4; border: 2px solid #4ECDC4; }
         .btn-success { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
         .btn-pdf { background: linear-gradient(135deg, #FF6B6B 0%, #ee5a5a 100%); color: white; }
+        .btn-purple { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
         .data-table-section { background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; margin-bottom: 30px; overflow-x: auto; }
         .summary-info { background: rgba(78, 205, 196, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         .summary-stats { display: flex; gap: 30px; flex-wrap: wrap; }
@@ -139,6 +140,7 @@
         .multi-buyer-section { background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); border-left: 5px solid #f093fb; }
         .multi-buyer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .multi-buyer-title { font-size: 1.4em; color: #333; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .multi-buyer-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .multi-buyer-toggle { display: flex; align-items: center; gap: 10px; }
         .multi-buyer-toggle label { color: #555; font-weight: 500; cursor: pointer; }
         .toggle-switch { position: relative; width: 50px; height: 26px; }
@@ -161,8 +163,8 @@
         .multi-buyer-breakdown { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #ddd; }
         .multi-buyer-breakdown.expanded { display: block; }
         .buyer-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; margin-bottom: 6px; }
-        .buyer-row-name { color: #333; font-weight: 500; }
-        .buyer-row-count { color: #44A08D; font-weight: bold; }
+        .buyer-row-name { color: #333; font-weight: 500; flex-shrink: 0; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .buyer-row-count { color: #44A08D; font-weight: bold; flex-shrink: 0; }
         .buyer-row-bar { flex: 1; margin: 0 15px; height: 6px; background: #e0e0e0; border-radius: 3px; }
         .buyer-row-bar-fill { height: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 3px; }
         .expand-icon { color: #999; transition: transform 0.3s; }
@@ -170,6 +172,13 @@
         .min-buyers-filter { display: flex; align-items: center; gap: 10px; }
         .min-buyers-filter label { color: #555; font-weight: 500; }
         .min-buyers-filter select { padding: 8px 12px; border: 2px solid #f093fb; border-radius: 8px; background: white; font-size: 0.95em; }
+        
+        /* PDF Preview Container (hidden, used for rendering) */
+        .pdf-render-container { position: fixed; left: -9999px; top: 0; width: 800px; background: white; }
+        .pdf-seller-card { padding: 20px; margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 10px; }
+        .pdf-seller-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 5px; }
+        .pdf-seller-subtitle { font-size: 12px; color: #666; margin-bottom: 15px; }
+        .pdf-chart-container { height: 200px; width: 100%; }
         
         @media (max-width: 768px) { .primary-filter-grid, .filter-grid, .stats-grid, .charts-section, .special-cards-row { grid-template-columns: 1fr; } .header { flex-direction: column; text-align: center; } .header-left h1 { font-size: 1.8em; } .multi-buyer-header { flex-direction: column; align-items: flex-start; } }
     </style>
@@ -230,7 +239,7 @@
         <div id="multiBuyerSection" class="multi-buyer-section hidden">
             <div class="multi-buyer-header">
                 <div class="multi-buyer-title">🔀 Multi-Buyer Sellers Analysis</div>
-                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                <div class="multi-buyer-controls">
                     <div class="min-buyers-filter">
                         <label>Min Buyers:</label>
                         <select id="minBuyersFilter" onchange="updateMultiBuyerDisplay()">
@@ -246,6 +255,7 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
+                    <button class="btn btn-purple" onclick="exportMultiBuyerPDF()" style="padding: 8px 16px; font-size: 0.85em;">📄 Export Multi-Buyer PDF</button>
                 </div>
             </div>
             <div class="multi-buyer-stats" id="multiBuyerStats"></div>
@@ -293,6 +303,10 @@
             <div id="tableContainer"></div>
         </div>
     </div>
+    
+    <!-- Hidden container for PDF rendering -->
+    <div id="pdfRenderContainer" class="pdf-render-container"></div>
+    
     <div class="loading-overlay hidden" id="loadingOverlay">
         <div class="loading-spinner"></div>
         <div class="loading-text" id="loadingText">Processing files...</div>
@@ -446,6 +460,172 @@
             refreshAllDisplays();
         }
         
+        // Multi-Buyer Seller PDF Export
+        async function exportMultiBuyerPDF() {
+            const minBuyers = parseInt(document.getElementById('minBuyersFilter').value) || 2;
+            const filtered = multiBuyerSellersData.filter(s => s.buyerCount >= minBuyers);
+            
+            if (filtered.length === 0) {
+                alert('No multi-buyer sellers to export');
+                return;
+            }
+            
+            showLoading('Generating Multi-Buyer Seller PDF...');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('portrait', 'mm', 'a4');
+                const pw = pdf.internal.pageSize.getWidth();
+                const ph = pdf.internal.pageSize.getHeight();
+                const m = 15;
+                
+                // Title page
+                pdf.setFillColor(240, 147, 251);
+                pdf.rect(0, 0, pw, 60, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(28);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Multi-Buyer Seller Analysis', pw / 2, 30, { align: 'center' });
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`Sellers with ${minBuyers}+ Investors`, pw / 2, 45, { align: 'center' });
+                pdf.setFontSize(11);
+                pdf.text('Generated: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pw / 2, 55, { align: 'center' });
+                
+                // Summary stats
+                let y = 75;
+                pdf.setTextColor(51, 51, 51);
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Summary', m, y);
+                y += 10;
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(11);
+                
+                const totalLocks = filtered.reduce((sum, s) => sum + s.totalLocks, 0);
+                const pctVolume = rawData.length > 0 ? ((totalLocks / rawData.length) * 100).toFixed(1) : 0;
+                
+                pdf.text(`• Total Sellers with ${minBuyers}+ Buyers: ${filtered.length}`, m + 5, y);
+                y += 7;
+                pdf.text(`• Total Locks from These Sellers: ${totalLocks.toLocaleString()}`, m + 5, y);
+                y += 7;
+                pdf.text(`• Percentage of Total Volume: ${pctVolume}%`, m + 5, y);
+                y += 15;
+                
+                // Create a hidden container for rendering charts
+                const container = document.getElementById('pdfRenderContainer');
+                container.innerHTML = '';
+                container.style.left = '-9999px';
+                
+                // Process each seller
+                for (let i = 0; i < filtered.length; i++) {
+                    const seller = filtered[i];
+                    
+                    showLoading(`Generating charts... (${i + 1}/${filtered.length})`);
+                    
+                    // Check if we need a new page
+                    if (i > 0 || y > 100) {
+                        pdf.addPage();
+                        y = 20;
+                    }
+                    
+                    // Create chart container
+                    const chartDiv = document.createElement('div');
+                    chartDiv.style.width = '750px';
+                    chartDiv.style.padding = '20px';
+                    chartDiv.style.background = 'white';
+                    chartDiv.innerHTML = `
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #333; margin-bottom: 5px;">${escapeHtml(seller.seller)}</div>
+                            <div style="font-size: 13px; color: #666;">Locks with <strong style="color: #f5576c;">${seller.buyerCount}</strong> buyers • <strong style="color: #f5576c;">${seller.totalLocks.toLocaleString()}</strong> total locks</div>
+                        </div>
+                        <div style="height: ${Math.max(150, seller.buyers.length * 35)}px;">
+                            <canvas id="pdfChart${i}"></canvas>
+                        </div>
+                    `;
+                    container.appendChild(chartDiv);
+                    
+                    // Wait for DOM update
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    
+                    // Create horizontal bar chart
+                    const ctx = document.getElementById(`pdfChart${i}`).getContext('2d');
+                    const chartHeight = Math.max(150, seller.buyers.length * 35);
+                    
+                    const chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: seller.buyers.map(([buyer]) => buyer.length > 40 ? buyer.substring(0, 38) + '...' : buyer),
+                            datasets: [{
+                                label: 'Locks',
+                                data: seller.buyers.map(([_, count]) => count),
+                                backgroundColor: 'rgba(240, 147, 251, 0.7)',
+                                borderColor: 'rgb(245, 87, 108)',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Number of Locks', font: { size: 11 } },
+                                    ticks: { font: { size: 10 } }
+                                },
+                                y: {
+                                    ticks: { font: { size: 11 } }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Wait for chart to render
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Capture chart to image
+                    const canvas = await html2canvas(chartDiv, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                    const imgWidth = pw - m * 2;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    
+                    // Check if image fits on current page
+                    if (y + imgHeight > ph - 20) {
+                        pdf.addPage();
+                        y = 20;
+                    }
+                    
+                    pdf.addImage(imgData, 'JPEG', m, y, imgWidth, imgHeight);
+                    y += imgHeight + 15;
+                    
+                    // Destroy chart and clean up
+                    chart.destroy();
+                    chartDiv.remove();
+                }
+                
+                // Clean up
+                container.innerHTML = '';
+                
+                pdf.save('multi_buyer_seller_analysis.pdf');
+                hideLoading();
+                
+            } catch (err) {
+                console.error('PDF generation error:', err);
+                hideLoading();
+                alert('Error generating PDF: ' + err.message);
+            }
+        }
+        
         function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
         function setupPrimaryFilters() { const buyers = [...new Set(rawData.map(r => r[COLUMNS.buyer]).filter(Boolean))].sort(); document.getElementById('buyerFilter').innerHTML = `<option value="">All Buyers (${buyers.length})</option>` + buyers.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)} (${rawData.filter(r => r[COLUMNS.buyer] === b).length.toLocaleString()})</option>`).join(''); updateSellerDropdown(); }
         function updateSellerDropdown() { const data = selectedBuyer ? rawData.filter(r => r[COLUMNS.buyer] === selectedBuyer) : rawData; const sc = {}; data.forEach(r => { const s = r[COLUMNS.seller]; if (s) sc[s] = (sc[s] || 0) + 1; }); allSellersForDropdown = Object.entries(sc).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })); renderSellerDropdownList(allSellersForDropdown); document.getElementById('sellerSearchInput').placeholder = `Search ${allSellersForDropdown.length} sellers...`; }
@@ -458,7 +638,6 @@
         function onBuyerChange() { selectedBuyer = document.getElementById('buyerFilter').value; if (selectedSeller && selectedBuyer && !rawData.some(r => r[COLUMNS.buyer] === selectedBuyer && r[COLUMNS.seller] === selectedSeller)) clearSellerSelection(); updateSellerDropdown(); }
         function applyPrimaryFilters() { 
             showLoading('Applying filters...'); 
-            // Turn off multi-buyer filter when applying primary filters
             multiBuyerFilterActive = false;
             document.getElementById('multiBuyerToggle').checked = false;
             
@@ -513,22 +692,18 @@
             const sorted = Object.entries(sc).sort((a, b) => b[1] - a[1]); 
             const total = sorted.reduce((s, [_, c]) => s + c, 0); 
             
-            // Current Lock Approved count
             const la = sorted.find(([s]) => s === 'Lock Approved'); 
             const laCount = la ? la[1] : 0;
             const laPct = total > 0 ? ((laCount / total) * 100).toFixed(1) : 0; 
             
-            // "Ever Locked" - all statuses that indicate the loan was at some point approved
             const everLockedCount = sorted
                 .filter(([status]) => EVER_LOCKED_STATUSES.includes(status))
                 .reduce((sum, [_, count]) => sum + count, 0);
             const everLockedPct = total > 0 ? ((everLockedCount / total) * 100).toFixed(1) : 0;
             
-            // Statuses that were locked but are no longer "Lock Approved"
             const wasLockedStatuses = ['Modification Requested', 'Cancelled', 'Voided', 'Extension Requested', 'Purchased'];
             const wasLockedItems = sorted.filter(([s]) => wasLockedStatuses.includes(s));
             
-            // Other statuses (never reached Lock Approved)
             const neverLockedItems = sorted.filter(([s]) => !EVER_LOCKED_STATUSES.includes(s));
             
             let ctx = ''; 
@@ -598,7 +773,7 @@
         function displayTable() { const display = filteredData.slice(0, 100); let html = `<p style="margin-bottom: 15px; color: #666;">Showing ${display.length} of ${filteredData.length.toLocaleString()} records</p><table><thead><tr><th>Lock ID</th><th>Buyer</th><th>Seller</th><th>Lock Date</th><th>Status</th><th>State</th><th>FICO</th><th>LTV</th><th>Rate</th><th>Loan Amount</th></tr></thead><tbody>`; display.forEach(r => { const d = parseDate(r[COLUMNS.lockDate]); const ltv = parseFloat(r[COLUMNS.ltv]); html += `<tr><td>${r[COLUMNS.lockId] || '-'}</td><td title="${r[COLUMNS.buyer] || ''}">${(r[COLUMNS.buyer] || '-').substring(0, 20)}</td><td title="${r[COLUMNS.seller] || ''}">${(r[COLUMNS.seller] || '-').substring(0, 25)}</td><td>${d ? formatDate(d) : '-'}</td><td>${r[COLUMNS.status] || '-'}</td><td>${r[COLUMNS.state] || '-'}</td><td>${r[COLUMNS.creditScore] || '-'}</td><td>${!isNaN(ltv) ? (ltv * 100).toFixed(1) + '%' : '-'}</td><td>${r[COLUMNS.rate] || '-'}</td><td>${r[COLUMNS.loanAmount] ? '$' + parseFloat(r[COLUMNS.loanAmount]).toLocaleString() : '-'}</td></tr>`; }); html += '</tbody></table>'; document.getElementById('tableContainer').innerHTML = html; const s = calculateStats(filteredData); const ub = new Set(filteredData.map(r => r[COLUMNS.buyer]).filter(Boolean)).size; document.getElementById('summaryStats').innerHTML = `<div class="summary-stat"><span class="summary-stat-label">Total Records:</span><span class="summary-stat-value">${s.totalLocks.toLocaleString()}</span></div><div class="summary-stat"><span class="summary-stat-label">Buyers:</span><span class="summary-stat-value">${ub}</span></div><div class="summary-stat"><span class="summary-stat-label">Sellers:</span><span class="summary-stat-value">${s.uniqueSellers}</span></div><div class="summary-stat"><span class="summary-stat-label">Avg FICO:</span><span class="summary-stat-value">${s.avgFico}</span></div><div class="summary-stat"><span class="summary-stat-label">Avg LTV:</span><span class="summary-stat-value">${s.avgLTV}%</span></div>`; }
         async function exportToPDF() { showLoading('Generating PDF...'); try { const { jsPDF } = window.jspdf; const pdf = new jsPDF('landscape', 'mm', 'a4'); const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = 15; pdf.setFillColor(78, 205, 196); pdf.rect(0, 0, pw, 50, 'F'); pdf.setTextColor(255, 255, 255); pdf.setFontSize(32); pdf.setFont('helvetica', 'bold'); pdf.text('Lock Data Analytics Report', pw / 2, 30, { align: 'center' }); pdf.setFontSize(12); pdf.setFont('helvetica', 'normal'); pdf.text('Generated: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pw / 2, 42, { align: 'center' }); let y = 60; if (multiBuyerFilterActive) { pdf.setTextColor(240, 147, 251); pdf.setFontSize(14); const minBuyers = parseInt(document.getElementById('minBuyersFilter').value) || 2; pdf.text('Filtered: Multi-buyer sellers (' + minBuyers + '+ buyers)', pw / 2, y, { align: 'center' }); y += 10; } else if (selectedBuyer || selectedSeller) { pdf.setTextColor(68, 160, 141); pdf.setFontSize(14); let ft = 'Filtered: '; if (selectedSeller && !selectedBuyer) ft += 'Seller: ' + selectedSeller; else if (selectedBuyer && !selectedSeller) ft += 'Buyer: ' + selectedBuyer; else ft += selectedBuyer + ' → ' + selectedSeller; pdf.text(ft, pw / 2, y, { align: 'center' }); y += 10; } pdf.setTextColor(51, 51, 51); pdf.setFontSize(11); pdf.text('Total Locks: ' + filteredData.length.toLocaleString(), m, y + 15); pdf.text('Unique Buyers: ' + new Set(filteredData.map(r => r[COLUMNS.buyer]).filter(Boolean)).size, m + 80, y + 15); pdf.text('Unique Sellers: ' + calculateStats(filteredData).uniqueSellers, m + 160, y + 15); const chartIds = ['sellersChartContainer', 'locksChartContainer', 'fixedArmChartContainer', 'ficoChartContainer', 'ltvChartContainer', 'dscrChartContainer', 'prepayChartContainer', 'purposeChartContainer', 'programChartContainer', 'loanTypeChartContainer', 'stateChartContainer', 'rateChartContainer']; for (const id of chartIds) { const el = document.getElementById(id); if (el) { pdf.addPage(); const canvas = await html2canvas(el, { scale: 1.2, backgroundColor: '#ffffff', logging: false }); const imgData = canvas.toDataURL('image/jpeg', 0.7); const imgW = pw - m * 2, imgH = (canvas.height * imgW) / canvas.width; const finalH = Math.min(imgH, ph - 40); const finalW = (finalH === ph - 40) ? (canvas.width * finalH) / canvas.height : imgW; pdf.addImage(imgData, 'JPEG', (pw - finalW) / 2, 25, finalW, finalH, undefined, 'FAST'); } } pdf.save('lock_analytics_report.pdf'); hideLoading(); } catch (err) { console.error(err); hideLoading(); alert('Error generating PDF'); } }
         function resetDashboard() { if (confirm('Start a new analysis?')) location.reload(); }
-        console.log('Lock Data Analytics Dashboard v6.0 with Multi-Buyer Seller Analysis loaded!');
+        console.log('Lock Data Analytics Dashboard v7.0 with Multi-Buyer Seller PDF Export loaded!');
     </script>
 </body>
 </html>
