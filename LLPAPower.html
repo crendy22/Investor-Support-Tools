@@ -1212,10 +1212,14 @@
             return numVal;
         }
 
-        function parseRange(rangeStr) {
+        function parseRange(rangeStr, isSingleValueMax = false) {
             if (!rangeStr || typeof rangeStr !== 'string') {
                 const num = parseFloat(rangeStr);
-                if (!isNaN(num)) return { min: num, max: num };
+                if (!isNaN(num)) {
+                    // If flagged as single-value-max, treat as max only
+                    if (isSingleValueMax) return { min: null, max: num, isSingleMax: true };
+                    return { min: num, max: num };
+                }
                 return { min: null, max: null };
             }
             
@@ -1247,12 +1251,81 @@
                 return { min: parseFloat(ficoMatch[1]), max: parseFloat(ficoMatch[2]) };
             }
             
+            // Single number (like "60%" or "65%") - could be max-only header
             const num = parseFloat(str.replace(/[%≤≥<>=]/g, ''));
             if (!isNaN(num)) {
+                if (isSingleValueMax) return { min: null, max: num, isSingleMax: true };
                 return { min: num, max: num };
             }
             
             return { min: null, max: null };
+        }
+
+        // Detect if CLTV headers are single-value-max pattern (e.g., 55%, 60%, 65%)
+        function detectSingleValueMaxPattern(headers) {
+            if (headers.length < 3) return false;
+            
+            const values = headers.map(h => {
+                const str = String(h.value).trim();
+                // Check if it's a simple percentage like "55%", "60%", "65%"
+                const match = str.match(/^(\d+(?:\.\d+)?)\s*%?\s*\*{0,2}$/);
+                if (match) return parseFloat(match[1]);
+                return null;
+            }).filter(v => v !== null);
+            
+            // If most headers are simple numbers and they're ascending, it's likely single-value-max
+            if (values.length >= headers.length * 0.7) {
+                // Check if values are ascending (typical for CLTV: 55, 60, 65, 70...)
+                let isAscending = true;
+                for (let i = 1; i < values.length; i++) {
+                    if (values[i] <= values[i-1]) {
+                        isAscending = false;
+                        break;
+                    }
+                }
+                
+                // Also check that they don't look like ranges already
+                const hasRangePattern = headers.some(h => /[-–]/.test(String(h.value)));
+                
+                return isAscending && !hasRangePattern;
+            }
+            
+            return false;
+        }
+
+        // Process CLTV headers with inferred min values for single-value-max pattern
+        function processCLTVHeadersWithInferredMin(headers, isSingleValueMax) {
+            if (!isSingleValueMax) {
+                // Normal processing - parse each header as-is
+                return headers.map(h => ({
+                    ...h,
+                    range: parseRange(h.value)
+                }));
+            }
+            
+            // Single-value-max pattern: each header is the MAX, MIN is previous MAX + 0.01
+            const processed = [];
+            let prevMax = null;
+            
+            for (let i = 0; i < headers.length; i++) {
+                const h = headers[i];
+                const parsed = parseRange(h.value, true);
+                
+                // Min is previous column's max + 0.01, or null for first column
+                const inferredMin = prevMax !== null ? prevMax + 0.01 : null;
+                
+                processed.push({
+                    ...h,
+                    range: {
+                        min: inferredMin,
+                        max: parsed.max
+                    }
+                });
+                
+                prevMax = parsed.max;
+            }
+            
+            return processed;
         }
 
         function cleanSheetName(name) {
@@ -1516,7 +1589,8 @@
                 labelCol: labelCol,
                 cltvHeaders: cltvHeaders,
                 rowLabels: rowLabels,
-                selected: true
+                selected: true,
+                isSingleValueMax: detectSingleValueMaxPattern(cltvHeaders)
             };
         }
 
@@ -1638,7 +1712,8 @@
                 const btn = document.createElement('button');
                 btn.className = `grid-btn ${grid.selected ? 'selected' : ''}`;
                 btn.textContent = grid.name;
-                btn.title = `${grid.type} | ${grid.rowLabels.length}×${grid.cltvHeaders.length} | ${grid.trigger || 'No trigger'}`;
+                const patternInfo = grid.isSingleValueMax ? ' | CLTV min inferred' : '';
+                btn.title = `${grid.type} | ${grid.rowLabels.length}×${grid.cltvHeaders.length} | ${grid.trigger || 'No trigger'}${patternInfo}`;
                 
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1665,17 +1740,34 @@
             state.currentGridForModal = grid;
             
             document.getElementById('gridModalName').textContent = grid.name;
-            document.getElementById('gridModalBadge').textContent = grid.type.toUpperCase();
+            
+            // Show badge with pattern detection info
+            let badgeText = grid.type.toUpperCase();
+            if (grid.isSingleValueMax) {
+                badgeText += ' • CLTV Min Inferred';
+            }
+            document.getElementById('gridModalBadge').textContent = badgeText;
+            
             document.getElementById('gridModalDimensions').textContent = `${grid.rowLabels.length} rows × ${grid.cltvHeaders.length} columns`;
             document.getElementById('gridModalSheet').textContent = `Sheet: ${grid.sheetName}`;
             
             const data = state.sheets[grid.sheetName];
             const table = document.getElementById('gridModalTable');
             
-            // Build table HTML
+            // Process CLTV headers with inferred min values if needed
+            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax);
+            
+            // Build table HTML - show inferred ranges in header if applicable
             let html = '<thead><tr><th></th>';
-            grid.cltvHeaders.forEach(h => {
-                html += `<th>${escapeHtml(h.value)}</th>`;
+            processedHeaders.forEach(h => {
+                let headerDisplay = escapeHtml(h.value);
+                if (grid.isSingleValueMax && h.range) {
+                    // Show the inferred range below the original value
+                    const minStr = h.range.min !== null ? h.range.min.toFixed(2) : '0';
+                    const maxStr = h.range.max !== null ? h.range.max : '?';
+                    headerDisplay = `${escapeHtml(h.value)}<br><small style="opacity:0.6;font-weight:normal;">${minStr}-${maxStr}</small>`;
+                }
+                html += `<th>${headerDisplay}</th>`;
             });
             html += '</tr></thead><tbody>';
             
@@ -1741,6 +1833,9 @@
             const grid = state.currentGridForModal;
             const data = state.sheets[grid.sheetName];
             
+            // Process CLTV headers with inferred min values if needed
+            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax);
+            
             // Create transposed LoanNEX format
             const rows = [];
             
@@ -1768,8 +1863,8 @@
             grid.rowLabels.forEach(rowLabel => {
                 const rowRange = parseRange(rowLabel.label);
                 
-                grid.cltvHeaders.forEach(colHeader => {
-                    const colRange = parseRange(colHeader.value);
+                processedHeaders.forEach(colHeader => {
+                    const colRange = colHeader.range; // Already processed with inferred min
                     const cellValue = data[rowLabel.row] ? data[rowLabel.row][colHeader.col] : null;
                     const normalizedValue = normalizeValue(cellValue);
                     
@@ -1789,7 +1884,7 @@
                         outputRow[17] = rowRange.max !== null ? rowRange.max : '';
                     }
                     
-                    // Set CLTV (columns 22-23) or other column dimension
+                    // Set CLTV (columns 22-23) with inferred min values
                     if (grid.colDimension === 'cltv') {
                         outputRow[22] = colRange.min !== null ? colRange.min : '';
                         outputRow[23] = colRange.max !== null ? colRange.max : '';
@@ -1806,7 +1901,7 @@
             });
             
             navigator.clipboard.writeText(rows.join('\n')).then(() => {
-                showCopyToast('✓ LoanNEX format copied!');
+                showCopyToast('✓ LoanNEX format copied!' + (grid.isSingleValueMax ? ' (CLTV min inferred)' : ''));
             }).catch(err => {
                 console.error('Copy failed:', err);
                 alert('Copy failed. Please try again.');
@@ -1863,6 +1958,9 @@
                 return [['OUT OF SCOPE - PPP grid handling not implemented']];
             }
             
+            // Process CLTV headers with inferred min values if needed
+            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax);
+            
             const headerRow = createHeaderRow();
             rows.push(headerRow);
             
@@ -1872,8 +1970,8 @@
             grid.rowLabels.forEach(rowLabel => {
                 const rowRange = parseRange(rowLabel.label);
                 
-                grid.cltvHeaders.forEach(colHeader => {
-                    const colRange = parseRange(colHeader.value);
+                processedHeaders.forEach(colHeader => {
+                    const colRange = colHeader.range; // Already processed with inferred min
                     const cellValue = data[rowLabel.row] ? data[rowLabel.row][colHeader.col] : null;
                     const normalizedValue = normalizeValue(cellValue);
                     
@@ -1882,6 +1980,8 @@
                     const outputRow = new Array(47).fill(null);
                     
                     setRowDimension(outputRow, grid.rowDimension, rowRange);
+                    
+                    // Use processed colRange with inferred min
                     setColDimension(outputRow, grid.colDimension, colRange);
                     
                     if (grid.valueType === 'rate') {
