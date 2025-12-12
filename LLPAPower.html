@@ -928,19 +928,11 @@
         /* Output Preview */
         .output-tabs {
             display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 1rem;
             padding: 1rem;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
-            align-items: center;
-        }
-
-        .output-tabs-wrapper {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            flex: 1;
+            align-items: flex-start;
         }
 
         .output-copy-btn {
@@ -970,16 +962,26 @@
             transform: translateY(0);
         }
 
+        .output-tabs-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
         .output-tab {
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1rem;
             background: var(--bg-tertiary);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
-            max-width: 200px;
+            width: 100%;
+            text-align: left;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -989,6 +991,7 @@
         .output-tab:hover {
             border-color: var(--accent-blue);
             color: var(--text-primary);
+            background: rgba(59, 130, 246, 0.1);
         }
 
         .output-tab.active {
@@ -1082,6 +1085,47 @@
             border-radius: 10px;
             font-size: 0.65rem;
             margin-left: 0.25rem;
+        }
+
+        /* Output sheet selector */
+        .output-sheet-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .output-sheet-tab {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .output-sheet-tab:hover {
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
+        .output-sheet-tab.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .output-sheet-tab .tab-count {
+            background: rgba(255,255,255,0.2);
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
         }
 
         /* Empty State */
@@ -1260,6 +1304,7 @@
                         </div>
                     </div>
                     <div id="outputView" class="table-wrapper" style="display: none;">
+                        <div class="output-sheet-selector" id="outputSheetSelector"></div>
                         <div class="output-tabs" id="outputTabs">
                             <div class="output-tabs-wrapper" id="outputTabsWrapper"></div>
                             <button class="output-copy-btn" id="outputCopyBtn" style="display: none;">📋 Copy Tab to Clipboard</button>
@@ -1404,8 +1449,10 @@
             detectedGrids: [],
             manualGrids: [],
             outputData: {},
+            outputSheetMap: {},  // Maps tab names to sheet names
             currentSheet: null,
             currentGridSheet: null,
+            currentOutputSheet: null,
             currentGridForModal: null,
             currentOutputTab: null,
             manualSelection: { start: null, end: null },
@@ -2433,12 +2480,15 @@
             document.getElementById('progressBar').style.width = '0%';
             
             state.outputData = {};
+            state.outputSheetMap = {};
+            state.currentOutputSheet = null;
             
             selectedGrids.forEach((grid, idx) => {
                 try {
                     const outputRows = transposeGrid(grid);
                     const tabName = generateTabName(grid);
                     state.outputData[tabName] = outputRows;
+                    state.outputSheetMap[tabName] = grid.sheetName;  // Track which sheet this tab belongs to
                     
                     const progress = ((idx + 1) / selectedGrids.length) * 100;
                     document.getElementById('progressBar').style.width = `${progress}%`;
@@ -2580,10 +2630,12 @@
         // ============================================
 
         function displayOutputPreview() {
+            const sheetSelector = document.getElementById('outputSheetSelector');
             const tabContainer = document.getElementById('outputTabsWrapper');
             const tableContainer = document.getElementById('outputTableContainer');
             const copyBtn = document.getElementById('outputCopyBtn');
             
+            sheetSelector.innerHTML = '';
             tabContainer.innerHTML = '';
             
             const tabNames = Object.keys(state.outputData);
@@ -2593,16 +2645,55 @@
                 return;
             }
             
+            // Group tabs by sheet
+            const tabsBySheet = {};
+            tabNames.forEach(tabName => {
+                const sheetName = state.outputSheetMap[tabName] || 'Unknown';
+                if (!tabsBySheet[sheetName]) {
+                    tabsBySheet[sheetName] = [];
+                }
+                tabsBySheet[sheetName].push(tabName);
+            });
+            
+            const sheetNames = Object.keys(tabsBySheet);
+            
+            // Set default current output sheet if not set or invalid
+            if (!state.currentOutputSheet || !tabsBySheet[state.currentOutputSheet]) {
+                state.currentOutputSheet = sheetNames[0];
+            }
+            
+            // Create sheet tabs
+            sheetNames.forEach(sheetName => {
+                const tab = document.createElement('button');
+                tab.className = `output-sheet-tab ${sheetName === state.currentOutputSheet ? 'active' : ''}`;
+                const count = tabsBySheet[sheetName].length;
+                tab.innerHTML = `${sheetName} <span class="tab-count">${count}</span>`;
+                tab.title = `${count} LLPAs from ${sheetName}`;
+                
+                tab.addEventListener('click', () => {
+                    state.currentOutputSheet = sheetName;
+                    displayOutputPreview();
+                });
+                
+                sheetSelector.appendChild(tab);
+            });
+            
             // Show copy button
             copyBtn.style.display = 'block';
             
-            tabNames.forEach((tabName, idx) => {
+            // Display tabs for current sheet only
+            const currentSheetTabs = tabsBySheet[state.currentOutputSheet] || [];
+            
+            currentSheetTabs.forEach((tabName, idx) => {
                 const tab = document.createElement('button');
-                tab.className = `output-tab ${idx === 0 ? 'active' : ''}`;
+                const isFirstInSheet = idx === 0 && tabName === state.currentOutputTab ? true : 
+                                       (idx === 0 && !currentSheetTabs.includes(state.currentOutputTab));
+                tab.className = `output-tab ${state.currentOutputTab === tabName ? 'active' : (isFirstInSheet ? 'active' : '')}`;
                 
-                // Show row count in tab
-                const rowCount = state.outputData[tabName].length - 2; // Subtract header rows
-                tab.textContent = `${tabName} (${rowCount})`;
+                // Show shortened name (remove sheet prefix) and row count
+                const shortName = tabName.replace(`${state.currentOutputSheet}-`, '').replace(cleanSheetName(state.currentOutputSheet) + '-', '');
+                const rowCount = state.outputData[tabName].length - 2;
+                tab.textContent = `${shortName} (${rowCount})`;
                 tab.title = `${tabName} - ${rowCount} data rows`;
                 
                 tab.addEventListener('click', () => {
@@ -2615,10 +2706,15 @@
                 tabContainer.appendChild(tab);
             });
             
-            // Set initial active tab
-            state.currentOutputTab = tabNames[0];
-            renderOutputTable(tabNames[0]);
-            updateCopyButtonText(tabNames[0]);
+            // Set initial active tab for this sheet
+            if (!currentSheetTabs.includes(state.currentOutputTab) && currentSheetTabs.length > 0) {
+                state.currentOutputTab = currentSheetTabs[0];
+            }
+            
+            if (state.currentOutputTab) {
+                renderOutputTable(state.currentOutputTab);
+                updateCopyButtonText(state.currentOutputTab);
+            }
             
             // Switch to output view
             document.querySelector('.preview-tab[data-view="output"]').click();
@@ -2627,7 +2723,10 @@
         function updateCopyButtonText(tabName) {
             const copyBtn = document.getElementById('outputCopyBtn');
             const rowCount = state.outputData[tabName] ? state.outputData[tabName].length - 2 : 0;
-            copyBtn.innerHTML = `📋 Copy "${tabName}" (${rowCount} rows)`;
+            // Show short name in button
+            const sheetName = state.outputSheetMap[tabName] || '';
+            const shortName = tabName.replace(`${sheetName}-`, '').replace(cleanSheetName(sheetName) + '-', '');
+            copyBtn.innerHTML = `📋 Copy "${shortName}" (${rowCount} rows)`;
         }
 
         function renderOutputTable(tabName) {
