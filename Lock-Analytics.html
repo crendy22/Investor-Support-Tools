@@ -255,7 +255,8 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <button class="btn btn-purple" onclick="exportMultiBuyerPDF()" style="padding: 8px 16px; font-size: 0.85em;">📄 Export Multi-Buyer PDF</button>
+                    <button class="btn btn-success" onclick="exportMultiBuyerExcel()" style="padding: 8px 16px; font-size: 0.85em;">📊 Export Excel</button>
+                    <button class="btn btn-purple" onclick="exportMultiBuyerPDF()" style="padding: 8px 16px; font-size: 0.85em;">📄 Export PDF</button>
                 </div>
             </div>
             <div class="multi-buyer-stats" id="multiBuyerStats"></div>
@@ -458,6 +459,170 @@
             
             updateContextBanner();
             refreshAllDisplays();
+        }
+        
+        // Multi-Buyer Seller Excel Export
+        function exportMultiBuyerExcel() {
+            const minBuyers = parseInt(document.getElementById('minBuyersFilter').value) || 2;
+            const filtered = multiBuyerSellersData.filter(s => s.buyerCount >= minBuyers);
+            
+            if (filtered.length === 0) {
+                alert('No multi-buyer sellers to export');
+                return;
+            }
+            
+            showLoading('Generating Excel export...');
+            
+            try {
+                const wb = XLSX.utils.book_new();
+                
+                // Sheet 1: Summary - one row per seller
+                const summaryData = filtered.map((s, idx) => ({
+                    'Rank': idx + 1,
+                    'Seller (Originator)': s.seller,
+                    'Number of Buyers': s.buyerCount,
+                    'Total Locks': s.totalLocks,
+                    '% of Total Volume': ((s.totalLocks / rawData.length) * 100).toFixed(2) + '%',
+                    'Top Buyer': s.buyers[0] ? s.buyers[0][0] : '',
+                    'Top Buyer Locks': s.buyers[0] ? s.buyers[0][1] : 0,
+                    'Top Buyer %': s.buyers[0] ? ((s.buyers[0][1] / s.totalLocks) * 100).toFixed(1) + '%' : ''
+                }));
+                
+                const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+                
+                // Set column widths for summary sheet
+                summarySheet['!cols'] = [
+                    { wch: 6 },   // Rank
+                    { wch: 45 },  // Seller
+                    { wch: 16 },  // Number of Buyers
+                    { wch: 12 },  // Total Locks
+                    { wch: 16 },  // % of Total Volume
+                    { wch: 40 },  // Top Buyer
+                    { wch: 14 },  // Top Buyer Locks
+                    { wch: 12 }   // Top Buyer %
+                ];
+                
+                XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+                
+                // Sheet 2: Detailed breakdown - one row per seller-buyer combination
+                const detailData = [];
+                filtered.forEach(s => {
+                    s.buyers.forEach(([buyer, count], buyerIdx) => {
+                        detailData.push({
+                            'Seller (Originator)': s.seller,
+                            'Seller Total Buyers': s.buyerCount,
+                            'Seller Total Locks': s.totalLocks,
+                            'Buyer (Investor)': buyer,
+                            'Locks with This Buyer': count,
+                            '% of Seller Volume': ((count / s.totalLocks) * 100).toFixed(1) + '%',
+                            '% of Total Volume': ((count / rawData.length) * 100).toFixed(2) + '%',
+                            'Buyer Rank for Seller': buyerIdx + 1
+                        });
+                    });
+                });
+                
+                const detailSheet = XLSX.utils.json_to_sheet(detailData);
+                
+                // Set column widths for detail sheet
+                detailSheet['!cols'] = [
+                    { wch: 45 },  // Seller
+                    { wch: 18 },  // Seller Total Buyers
+                    { wch: 16 },  // Seller Total Locks
+                    { wch: 45 },  // Buyer
+                    { wch: 18 },  // Locks with This Buyer
+                    { wch: 16 },  // % of Seller Volume
+                    { wch: 16 },  // % of Total Volume
+                    { wch: 18 }   // Buyer Rank
+                ];
+                
+                XLSX.utils.book_append_sheet(wb, detailSheet, 'Seller-Buyer Detail');
+                
+                // Sheet 3: Pivot-style view - Buyers as columns (top 10 buyers only for readability)
+                const allBuyers = new Set();
+                filtered.forEach(s => s.buyers.forEach(([buyer]) => allBuyers.add(buyer)));
+                
+                // Get top buyers by total volume across all multi-buyer sellers
+                const buyerTotals = {};
+                filtered.forEach(s => {
+                    s.buyers.forEach(([buyer, count]) => {
+                        buyerTotals[buyer] = (buyerTotals[buyer] || 0) + count;
+                    });
+                });
+                const topBuyers = Object.entries(buyerTotals)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 15)
+                    .map(([buyer]) => buyer);
+                
+                const pivotData = filtered.map(s => {
+                    const row = {
+                        'Seller (Originator)': s.seller,
+                        'Total Buyers': s.buyerCount,
+                        'Total Locks': s.totalLocks
+                    };
+                    
+                    // Create a map of this seller's buyers
+                    const buyerMap = {};
+                    s.buyers.forEach(([buyer, count]) => {
+                        buyerMap[buyer] = count;
+                    });
+                    
+                    // Add columns for top buyers
+                    topBuyers.forEach(buyer => {
+                        row[buyer] = buyerMap[buyer] || 0;
+                    });
+                    
+                    row['Other Buyers'] = s.buyers
+                        .filter(([buyer]) => !topBuyers.includes(buyer))
+                        .reduce((sum, [_, count]) => sum + count, 0);
+                    
+                    return row;
+                });
+                
+                const pivotSheet = XLSX.utils.json_to_sheet(pivotData);
+                
+                // Set column widths for pivot sheet
+                const pivotCols = [
+                    { wch: 45 },  // Seller
+                    { wch: 12 },  // Total Buyers
+                    { wch: 11 }   // Total Locks
+                ];
+                topBuyers.forEach(() => pivotCols.push({ wch: 20 }));
+                pivotCols.push({ wch: 12 }); // Other Buyers
+                pivotSheet['!cols'] = pivotCols;
+                
+                XLSX.utils.book_append_sheet(wb, pivotSheet, 'Buyer Matrix');
+                
+                // Sheet 4: Stats summary
+                const totalLocks = filtered.reduce((sum, s) => sum + s.totalLocks, 0);
+                const statsData = [
+                    { 'Metric': 'Report Generated', 'Value': new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) },
+                    { 'Metric': 'Minimum Buyers Filter', 'Value': minBuyers + '+' },
+                    { 'Metric': 'Total Multi-Buyer Sellers', 'Value': filtered.length },
+                    { 'Metric': 'Total Locks from Multi-Buyer Sellers', 'Value': totalLocks.toLocaleString() },
+                    { 'Metric': '% of Total Pipeline Volume', 'Value': ((totalLocks / rawData.length) * 100).toFixed(2) + '%' },
+                    { 'Metric': 'Total Pipeline Locks', 'Value': rawData.length.toLocaleString() },
+                    { 'Metric': 'Average Buyers per Multi-Buyer Seller', 'Value': (filtered.reduce((sum, s) => sum + s.buyerCount, 0) / filtered.length).toFixed(1) },
+                    { 'Metric': 'Average Locks per Multi-Buyer Seller', 'Value': Math.round(totalLocks / filtered.length).toLocaleString() },
+                    { 'Metric': 'Max Buyers for Single Seller', 'Value': Math.max(...filtered.map(s => s.buyerCount)) },
+                    { 'Metric': 'Seller with Most Buyers', 'Value': filtered[0] ? filtered[0].seller : 'N/A' }
+                ];
+                
+                const statsSheet = XLSX.utils.json_to_sheet(statsData);
+                statsSheet['!cols'] = [{ wch: 35 }, { wch: 50 }];
+                
+                XLSX.utils.book_append_sheet(wb, statsSheet, 'Report Info');
+                
+                // Generate filename with date
+                const dateStr = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `multi_buyer_seller_analysis_${dateStr}.xlsx`);
+                
+                hideLoading();
+                
+            } catch (err) {
+                console.error('Excel export error:', err);
+                hideLoading();
+                alert('Error generating Excel: ' + err.message);
+            }
         }
         
         // Multi-Buyer Seller PDF Export
@@ -795,7 +960,7 @@
         function displayTable() { const display = filteredData.slice(0, 100); let html = `<p style="margin-bottom: 15px; color: #666;">Showing ${display.length} of ${filteredData.length.toLocaleString()} records</p><table><thead><tr><th>Lock ID</th><th>Buyer</th><th>Seller</th><th>Lock Date</th><th>Status</th><th>State</th><th>FICO</th><th>LTV</th><th>Rate</th><th>Loan Amount</th></tr></thead><tbody>`; display.forEach(r => { const d = parseDate(r[COLUMNS.lockDate]); const ltv = parseFloat(r[COLUMNS.ltv]); html += `<tr><td>${r[COLUMNS.lockId] || '-'}</td><td title="${r[COLUMNS.buyer] || ''}">${(r[COLUMNS.buyer] || '-').substring(0, 20)}</td><td title="${r[COLUMNS.seller] || ''}">${(r[COLUMNS.seller] || '-').substring(0, 25)}</td><td>${d ? formatDate(d) : '-'}</td><td>${r[COLUMNS.status] || '-'}</td><td>${r[COLUMNS.state] || '-'}</td><td>${r[COLUMNS.creditScore] || '-'}</td><td>${!isNaN(ltv) ? (ltv * 100).toFixed(1) + '%' : '-'}</td><td>${r[COLUMNS.rate] || '-'}</td><td>${r[COLUMNS.loanAmount] ? '$' + parseFloat(r[COLUMNS.loanAmount]).toLocaleString() : '-'}</td></tr>`; }); html += '</tbody></table>'; document.getElementById('tableContainer').innerHTML = html; const s = calculateStats(filteredData); const ub = new Set(filteredData.map(r => r[COLUMNS.buyer]).filter(Boolean)).size; document.getElementById('summaryStats').innerHTML = `<div class="summary-stat"><span class="summary-stat-label">Total Records:</span><span class="summary-stat-value">${s.totalLocks.toLocaleString()}</span></div><div class="summary-stat"><span class="summary-stat-label">Buyers:</span><span class="summary-stat-value">${ub}</span></div><div class="summary-stat"><span class="summary-stat-label">Sellers:</span><span class="summary-stat-value">${s.uniqueSellers}</span></div><div class="summary-stat"><span class="summary-stat-label">Avg FICO:</span><span class="summary-stat-value">${s.avgFico}</span></div><div class="summary-stat"><span class="summary-stat-label">Avg LTV:</span><span class="summary-stat-value">${s.avgLTV}%</span></div>`; }
         async function exportToPDF() { showLoading('Generating PDF...'); try { const { jsPDF } = window.jspdf; const pdf = new jsPDF('landscape', 'mm', 'a4'); const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = 15; pdf.setFillColor(78, 205, 196); pdf.rect(0, 0, pw, 50, 'F'); pdf.setTextColor(255, 255, 255); pdf.setFontSize(32); pdf.setFont('helvetica', 'bold'); pdf.text('Lock Data Analytics Report', pw / 2, 30, { align: 'center' }); pdf.setFontSize(12); pdf.setFont('helvetica', 'normal'); pdf.text('Generated: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pw / 2, 42, { align: 'center' }); let y = 60; if (multiBuyerFilterActive) { pdf.setTextColor(240, 147, 251); pdf.setFontSize(14); const minBuyers = parseInt(document.getElementById('minBuyersFilter').value) || 2; pdf.text('Filtered: Multi-buyer sellers (' + minBuyers + '+ buyers)', pw / 2, y, { align: 'center' }); y += 10; } else if (selectedBuyer || selectedSeller) { pdf.setTextColor(68, 160, 141); pdf.setFontSize(14); let ft = 'Filtered: '; if (selectedSeller && !selectedBuyer) ft += 'Seller: ' + selectedSeller; else if (selectedBuyer && !selectedSeller) ft += 'Buyer: ' + selectedBuyer; else ft += selectedBuyer + ' → ' + selectedSeller; pdf.text(ft, pw / 2, y, { align: 'center' }); y += 10; } pdf.setTextColor(51, 51, 51); pdf.setFontSize(11); pdf.text('Total Locks: ' + filteredData.length.toLocaleString(), m, y + 15); pdf.text('Unique Buyers: ' + new Set(filteredData.map(r => r[COLUMNS.buyer]).filter(Boolean)).size, m + 80, y + 15); pdf.text('Unique Sellers: ' + calculateStats(filteredData).uniqueSellers, m + 160, y + 15); const chartIds = ['sellersChartContainer', 'locksChartContainer', 'fixedArmChartContainer', 'ficoChartContainer', 'ltvChartContainer', 'dscrChartContainer', 'prepayChartContainer', 'purposeChartContainer', 'programChartContainer', 'loanTypeChartContainer', 'stateChartContainer', 'rateChartContainer']; for (const id of chartIds) { const el = document.getElementById(id); if (el) { pdf.addPage(); const canvas = await html2canvas(el, { scale: 1.2, backgroundColor: '#ffffff', logging: false }); const imgData = canvas.toDataURL('image/jpeg', 0.7); const imgW = pw - m * 2, imgH = (canvas.height * imgW) / canvas.width; const finalH = Math.min(imgH, ph - 40); const finalW = (finalH === ph - 40) ? (canvas.width * finalH) / canvas.height : imgW; pdf.addImage(imgData, 'JPEG', (pw - finalW) / 2, 25, finalW, finalH, undefined, 'FAST'); } } pdf.save('lock_analytics_report.pdf'); hideLoading(); } catch (err) { console.error(err); hideLoading(); alert('Error generating PDF'); } }
         function resetDashboard() { if (confirm('Start a new analysis?')) location.reload(); }
-        console.log('Lock Data Analytics Dashboard v7.0 with Multi-Buyer Seller PDF Export loaded!');
+        console.log('Lock Data Analytics Dashboard v7.1 with Multi-Buyer Excel + PDF Export loaded!');
     </script>
 </body>
 </html>
