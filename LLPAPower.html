@@ -1185,7 +1185,7 @@
         };
 
         // Ineligible markers
-        const INELIGIBLE_MARKERS = ['-', 'na', 'NA', 'N/A', 'n/a', '', null, undefined];
+        const INELIGIBLE_MARKERS = ['-', '--', '---', 'na', 'NA', 'N/A', 'n/a', 'n\\a', 'x', 'X', 'ineligible', 'not eligible', '', null, undefined];
 
         // ============================================
         // UTILITY FUNCTIONS
@@ -1212,53 +1212,87 @@
             return numVal;
         }
 
-        function parseRange(rangeStr, isSingleValueMax = false) {
+        function parseRange(rangeStr, isSingleValueMax = false, isDecimalCLTV = false) {
             if (!rangeStr || typeof rangeStr !== 'string') {
-                const num = parseFloat(rangeStr);
+                let num = parseFloat(rangeStr);
                 if (!isNaN(num)) {
-                    // If flagged as single-value-max, treat as max only
+                    // Check if it's a decimal percentage (0.55 = 55%)
+                    if (isDecimalCLTV && num > 0 && num < 1) {
+                        num = num * 100;
+                    }
                     if (isSingleValueMax) return { min: null, max: num, isSingleMax: true };
                     return { min: num, max: num };
                 }
                 return { min: null, max: null };
             }
             
-            const str = rangeStr.trim();
+            let str = String(rangeStr).trim();
             
-            const plusMatch = str.match(/^[≥>=]*\s*(\d+(?:\.\d+)?)\s*\+?$/);
-            if (plusMatch || str.includes('+') || str.startsWith('>=') || str.startsWith('≥')) {
+            // Remove "FICO" prefix if present
+            str = str.replace(/^fico\s*/i, '');
+            
+            // Handle >= or ≥ or + patterns (open-ended minimum)
+            // Examples: "780+", "≥800", ">= 780", ">=780"
+            const gteMatch = str.match(/^[≥>=]*\s*(\d+(?:\.\d+)?)\s*\+?$/);
+            if (gteMatch || str.includes('+') || str.match(/^[≥>]\s*=?\s*\d/)) {
                 const num = parseFloat(str.replace(/[≥>=+\s]/g, ''));
                 return { min: num, max: null };
             }
             
-            const lteMatch = str.match(/^[≤<=<]+\s*(\d+(?:\.\d+)?)\s*%?$/);
+            // Handle <= or ≤ patterns (open-ended maximum)
+            // Examples: "<=50", "≤50%", "≤ 50", "<= 50.00"
+            const lteMatch = str.match(/^[≤<=<]+\s*(\d+(?:\.\d+)?)\s*%?\s*\*{0,2}$/);
             if (lteMatch) {
-                return { min: null, max: parseFloat(lteMatch[1]) };
+                let max = parseFloat(lteMatch[1]);
+                if (isDecimalCLTV && max > 0 && max < 1) max = max * 100;
+                return { min: null, max: max };
             }
             
-            const dashMatch = str.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
-            if (dashMatch) {
-                return { min: parseFloat(dashMatch[1]) || null, max: parseFloat(dashMatch[2]) };
-            }
-            
-            const rangeMatch = str.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/);
+            // Handle range patterns with various dash types
+            // Examples: "760-779", "740 - 759", "50.01-55", "55.01-60.00", "50.01–55"
+            const rangeMatch = str.match(/(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)/);
             if (rangeMatch) {
-                return { min: parseFloat(rangeMatch[1]), max: parseFloat(rangeMatch[2]) };
+                let min = parseFloat(rangeMatch[1]);
+                let max = parseFloat(rangeMatch[2]);
+                // Handle decimal CLTV (0.55-0.60 means 55-60)
+                if (isDecimalCLTV) {
+                    if (min > 0 && min < 1) min = min * 100;
+                    if (max > 0 && max < 1) max = max * 100;
+                }
+                return { min: min, max: max };
             }
             
-            const ficoMatch = str.match(/(\d{3})\s*[-–]\s*(\d{3})/);
+            // Handle FICO-specific patterns (3-digit ranges)
+            const ficoMatch = str.match(/(\d{3})\s*[-–—]\s*(\d{3})/);
             if (ficoMatch) {
                 return { min: parseFloat(ficoMatch[1]), max: parseFloat(ficoMatch[2]) };
             }
             
-            // Single number (like "60%" or "65%") - could be max-only header
-            const num = parseFloat(str.replace(/[%≤≥<>=]/g, ''));
+            // Single number - could be percentage or FICO score
+            // Remove %, ≤, ≥, <, >, =, *, spaces
+            let num = parseFloat(str.replace(/[%≤≥<>=*\s]/g, ''));
             if (!isNaN(num)) {
+                // Check if it's a decimal percentage (0.55 = 55%)
+                if (isDecimalCLTV && num > 0 && num < 1) {
+                    num = num * 100;
+                }
                 if (isSingleValueMax) return { min: null, max: num, isSingleMax: true };
                 return { min: num, max: num };
             }
             
             return { min: null, max: null };
+        }
+
+        // Detect if CLTV headers use decimal format (0.55 = 55%)
+        function detectDecimalCLTVPattern(headers) {
+            const values = headers.map(h => {
+                const num = parseFloat(String(h.value).trim());
+                return isNaN(num) ? null : num;
+            }).filter(v => v !== null);
+            
+            // If most values are between 0.45 and 0.95, it's decimal CLTV
+            const decimalCount = values.filter(v => v >= 0.45 && v <= 0.95).length;
+            return decimalCount >= values.length * 0.5;
         }
 
         // Detect if CLTV headers are single-value-max pattern (e.g., 55%, 60%, 65%)
@@ -1267,9 +1301,14 @@
             
             const values = headers.map(h => {
                 const str = String(h.value).trim();
-                // Check if it's a simple percentage like "55%", "60%", "65%"
+                // Check if it's a simple percentage like "55%", "60%", "65%", or decimal like 0.55, 0.6
                 const match = str.match(/^(\d+(?:\.\d+)?)\s*%?\s*\*{0,2}$/);
-                if (match) return parseFloat(match[1]);
+                if (match) {
+                    let val = parseFloat(match[1]);
+                    // Convert decimal percentage to whole number
+                    if (val > 0 && val < 1) val = val * 100;
+                    return val;
+                }
                 return null;
             }).filter(v => v !== null);
             
@@ -1285,21 +1324,24 @@
                 }
                 
                 // Also check that they don't look like ranges already
-                const hasRangePattern = headers.some(h => /[-–]/.test(String(h.value)));
+                const hasRangePattern = headers.some(h => /[-–—]/.test(String(h.value)));
                 
-                return isAscending && !hasRangePattern;
+                // Check they don't have explicit min indicators like "<=50"
+                const hasLtePattern = headers.some(h => /[≤<=]/.test(String(h.value)));
+                
+                return isAscending && !hasRangePattern && !hasLtePattern;
             }
             
             return false;
         }
 
         // Process CLTV headers with inferred min values for single-value-max pattern
-        function processCLTVHeadersWithInferredMin(headers, isSingleValueMax) {
+        function processCLTVHeadersWithInferredMin(headers, isSingleValueMax, isDecimalCLTV = false) {
             if (!isSingleValueMax) {
                 // Normal processing - parse each header as-is
                 return headers.map(h => ({
                     ...h,
-                    range: parseRange(h.value)
+                    range: parseRange(h.value, false, isDecimalCLTV)
                 }));
             }
             
@@ -1309,10 +1351,10 @@
             
             for (let i = 0; i < headers.length; i++) {
                 const h = headers[i];
-                const parsed = parseRange(h.value, true);
+                const parsed = parseRange(h.value, true, isDecimalCLTV);
                 
                 // Min is previous column's max + 0.01, or null for first column
-                const inferredMin = prevMax !== null ? prevMax + 0.01 : null;
+                const inferredMin = prevMax !== null ? Math.round((prevMax + 0.01) * 100) / 100 : null;
                 
                 processed.push({
                     ...h,
@@ -1590,7 +1632,9 @@
                 cltvHeaders: cltvHeaders,
                 rowLabels: rowLabels,
                 selected: true,
-                isSingleValueMax: detectSingleValueMaxPattern(cltvHeaders)
+                isSingleValueMax: detectSingleValueMaxPattern(cltvHeaders),
+                isDecimalCLTV: detectDecimalCLTVPattern(cltvHeaders),
+                isSingleValueFico: detectSingleValueFicoPattern(rowLabels)
             };
         }
 
@@ -1598,16 +1642,40 @@
             if (!str) return false;
             const s = String(str).trim().toLowerCase();
             
+            // Skip certain labels that aren't CLTV headers
+            if (s.includes('fico') || s.includes('credit') || s.includes('score') || 
+                s.includes('rate') || s.includes('day') || s.includes('lock')) return false;
+            
             const patterns = [
-                /^[≤<=]\s*\d+/,
+                // Explicit ranges: "50.01-55", "55.01-60.00", "65.01-70%"
                 /^\d+\.?\d*\s*[-–]\s*\d+/,
-                /^\d+\.?\d*\s*%?$/,
-                /^0\s*[-–]/,
-                /≤\s*50/,
-                /^\d+\.\d+-\d+/,
+                // Less than or equal: "<=50", "≤50%", "≤ 50", "<= 50.00"
+                /^[≤<=]+\s*\d+/,
+                // Simple percentages: "55%", "60%", "65%"
+                /^\d+\.?\d*\s*%\s*\*{0,2}$/,
+                // Simple numbers in CLTV range (50-100)
+                /^[45678][05]$/,
+                /^90$/,
+                // Starting with 0: "00.01-50", "0-50"
+                /^0+\.?\d*\s*[-–]/,
+                // Decimal percentages like AO PORT/eRESI: 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9
+                /^0\.[456789]\d*$/,
+                // With asterisks for footnotes: "90%**", "85%*"
+                /^\d+\.?\d*\s*%?\s*\*{1,2}$/,
             ];
             
-            return patterns.some(p => p.test(s));
+            if (patterns.some(p => p.test(s))) return true;
+            
+            // Check if it's a decimal that could be a percentage (0.5-1.0 range)
+            const num = parseFloat(s.replace(/[%*]/g, ''));
+            if (!isNaN(num)) {
+                // Decimal percentages (0.5 to 0.95) - these represent 50% to 95%
+                if (num >= 0.45 && num <= 0.95) return true;
+                // Normal percentages (45 to 95)
+                if (num >= 45 && num <= 95) return true;
+            }
+            
+            return false;
         }
 
         function isSkippableLabel(label) {
@@ -1622,43 +1690,120 @@
         }
 
         function isFicoRange(str) {
+            if (!str) return false;
+            const s = String(str).trim();
+            
+            // Remove "FICO" prefix if present
+            const cleaned = s.replace(/^fico\s*/i, '');
+            
             const patterns = [
-                /^\d{3}\s*[-–]\s*\d{3}/,
+                // Ranges: "760-779", "740 - 759", "700 -719" (with or without spaces)
+                /^\d{3}\s*[-–—]\s*\d{3}/,
+                // Open-ended high: "780+", "800+"
                 /^\d{3}\+/,
+                // Greater than or equal: ">=780", "≥800", ">= 780"
                 /^[≥>=]+\s*\d{3}/,
+                // Less than or equal: "<660", "≤659"
                 /^[<≤]+\s*\d{3}/,
+                // Single FICO scores (in descending pattern, implies max is from next row)
+                // Only match if it's exactly 3 digits (a FICO score)
             ];
-            return patterns.some(p => p.test(String(str).trim()));
+            
+            return patterns.some(p => p.test(cleaned));
+        }
+        
+        // Detect if FICO labels are single values (need to infer max from next row)
+        function detectSingleValueFicoPattern(rowLabels) {
+            if (rowLabels.length < 3) return false;
+            
+            const values = rowLabels.map(r => {
+                const cleaned = String(r.label).replace(/^fico\s*/i, '').trim();
+                // Check for single 3-digit number
+                const match = cleaned.match(/^(\d{3})$/);
+                return match ? parseInt(match[1]) : null;
+            }).filter(v => v !== null);
+            
+            // If most labels are single FICO values in descending order
+            if (values.length >= rowLabels.length * 0.7) {
+                let isDescending = true;
+                for (let i = 1; i < values.length; i++) {
+                    if (values[i] >= values[i-1]) {
+                        isDescending = false;
+                        break;
+                    }
+                }
+                return isDescending;
+            }
+            return false;
         }
 
         function determineGridType(rowLabels, sheetName, data, headerRow) {
             const labels = rowLabels.map(r => r.label.toLowerCase());
             
+            // Check for FICO ranges first (most common)
             if (rowLabels.some(r => isFicoRange(r.label))) {
                 return { type: 'fico-cltv', badge: 'fico-cltv', name: 'FICO_CLTV', rowDim: 'fico' };
             }
             
+            // Check for single FICO values (like "780", "760", "740")
+            if (detectSingleValueFicoPattern(rowLabels)) {
+                return { type: 'fico-cltv', badge: 'fico-cltv', name: 'FICO_CLTV', rowDim: 'fico' };
+            }
+            
+            // Check for state adjustments (2-letter codes)
             if (rowLabels.every(r => /^[A-Z]{2}$/.test(r.label.trim()))) {
                 return { type: 'state', badge: 'state', name: 'State', rowDim: 'state' };
             }
             
-            if (labels.some(l => l.includes('$') || l.includes('mm') || l.includes('000'))) {
-                return { type: 'cltv-only', badge: 'cltv-only', name: 'LoanAmt_CLTV', rowDim: 'amount' };
+            // Check for loan amount adjustments
+            if (labels.some(l => l.includes('$') || l.includes('mm') || l.includes('000') || 
+                l.includes('upb') || l.includes('loan amount') || l.includes('balance'))) {
+                return { type: 'cltv-only', badge: 'amount', name: 'LoanAmt_CLTV', rowDim: 'amount' };
             }
             
-            if (labels.some(l => l.includes('condo') || l.includes('unit') || l.includes('sfr') || l.includes('pud'))) {
-                return { type: 'cltv-only', badge: 'cltv-only', name: 'PropType_CLTV', rowDim: 'other' };
+            // Check for property type adjustments
+            if (labels.some(l => l.includes('condo') || l.includes('unit') || l.includes('sfr') || 
+                l.includes('pud') || l.includes('property') || l.includes('non-warrantable') ||
+                l.includes('condotel') || l.includes('co-op') || l.includes('coop'))) {
+                return { type: 'cltv-only', badge: 'property', name: 'PropType_CLTV', rowDim: 'other' };
             }
             
-            if (labels.some(l => l.includes('dti'))) {
-                return { type: 'cltv-only', badge: 'cltv-only', name: 'DTI_CLTV', rowDim: 'dti' };
+            // Check for DTI adjustments
+            if (labels.some(l => l.includes('dti') || l.match(/\d+%?\s*[-–]\s*\d+%/) || l.includes('43%'))) {
+                return { type: 'cltv-only', badge: 'dti', name: 'DTI_CLTV', rowDim: 'dti' };
             }
             
-            if (labels.some(l => l.includes('prepay') || l.includes('ppp') || l.includes('year'))) {
+            // Check for DSCR adjustments  
+            if (labels.some(l => l.includes('dscr') || l.includes('no ratio') || l.match(/\d\.\d{1,2}\s*[-–]/))) {
+                return { type: 'cltv-only', badge: 'dscr', name: 'DSCR_CLTV', rowDim: 'dscr' };
+            }
+            
+            // Check for PPP/prepayment adjustments
+            if (labels.some(l => l.includes('prepay') || l.includes('ppp') || 
+                (l.includes('year') && (l.includes('1') || l.includes('2') || l.includes('3') || l.includes('4') || l.includes('5'))))) {
                 return { type: 'ppp', badge: 'ppp', name: 'PPP', rowDim: 'ppp' };
             }
             
-            return { type: 'cltv-only', badge: 'cltv-only', name: 'Adjustment_CLTV', rowDim: 'other' };
+            // Check for loan purpose adjustments
+            if (labels.some(l => l.includes('purchase') || l.includes('rate/term') || l.includes('cash out') ||
+                l.includes('refi') || l.includes('refinance'))) {
+                return { type: 'cltv-only', badge: 'purpose', name: 'LoanPurpose_CLTV', rowDim: 'other' };
+            }
+            
+            // Check for occupancy adjustments
+            if (labels.some(l => l.includes('investor') || l.includes('second home') || 
+                l.includes('primary') || l.includes('owner'))) {
+                return { type: 'cltv-only', badge: 'occupancy', name: 'Occupancy_CLTV', rowDim: 'other' };
+            }
+            
+            // Check for documentation type adjustments
+            if (labels.some(l => l.includes('bank statement') || l.includes('full doc') || 
+                l.includes('alt doc') || l.includes('1099') || l.includes('p&l'))) {
+                return { type: 'cltv-only', badge: 'doctype', name: 'DocType_CLTV', rowDim: 'other' };
+            }
+            
+            // Default fallback
+            return { type: 'cltv-only', badge: 'adjustment', name: 'Adjustment_CLTV', rowDim: 'other' };
         }
 
         function findGridTrigger(data, headerRow, startCol) {
@@ -1674,27 +1819,48 @@
                     
                     const cellStr = String(cell).trim().toLowerCase();
                     
+                    // Occupancy
                     if (cellStr.includes('primary') && !cellStr.includes('nco')) triggers.push('Primary');
                     else if (cellStr.includes('second home')) triggers.push('Second Home');
                     else if (cellStr.includes('noo') || cellStr.includes('investor') || cellStr.includes('investment')) triggers.push('Investment');
                     
+                    // Loan Purpose
                     if (cellStr.includes('purchase') && !cellStr.includes('noo')) triggers.push('Purchase');
-                    else if (cellStr.includes('nco') || cellStr.includes('rate/term') || cellStr.includes('r/t')) triggers.push('NCO Refi');
-                    else if (cellStr.includes('cash') && cellStr.includes('out') || cellStr.includes('co refi')) triggers.push('CO Refi');
+                    else if (cellStr.includes('nco') || cellStr.includes('rate/term') || cellStr.includes('r/t') || cellStr.includes('rate term')) triggers.push('NCO Refi');
+                    else if ((cellStr.includes('cash') && cellStr.includes('out')) || cellStr.includes('co refi') || cellStr.includes('cashout')) triggers.push('CO Refi');
                     
-                    if (cellStr.includes('full doc')) triggers.push('FullDoc');
-                    else if (cellStr.includes('bank statement')) triggers.push('BankStmt');
+                    // Documentation Types - expanded for all the patterns we found
+                    if (cellStr.includes('full doc') || cellStr === 'full documentation') triggers.push('FullDoc');
+                    else if (cellStr.includes('2 year') && (cellStr.includes('full') || cellStr.includes('doc'))) triggers.push('2YrFullDoc');
+                    else if (cellStr.includes('bank statement') || cellStr.includes('bank stmt') || cellStr === 'bs') triggers.push('BankStmt');
+                    else if (cellStr.includes('12 month') || cellStr.includes('12 mo') || cellStr.includes('12mo')) triggers.push('12Mo');
+                    else if (cellStr.includes('24 month') || cellStr.includes('24 mo') || cellStr.includes('24mo')) triggers.push('24Mo');
                     else if (cellStr.includes('1099')) triggers.push('1099');
-                    else if (cellStr.includes('p&l') || cellStr.includes('profit')) triggers.push('P&L');
+                    else if (cellStr.includes('p&l') || cellStr.includes('profit') || cellStr.includes('cpa')) triggers.push('P&L');
                     else if (cellStr.includes('dscr')) triggers.push('DSCR');
-                    else if (cellStr.includes('asset')) triggers.push('Asset');
+                    else if (cellStr.includes('asset') && (cellStr.includes('qual') || cellStr.includes('depl') || cellStr.includes('util'))) triggers.push('Asset');
+                    else if (cellStr.includes('alt doc') || cellStr.includes('alternative')) triggers.push('AltDoc');
+                    else if (cellStr.includes('standard doc')) triggers.push('StdDoc');
+                    else if (cellStr.includes('enhanced doc')) triggers.push('EnhancedDoc');
+                    else if (cellStr.includes('wvoe')) triggers.push('WVOE');
+                    else if (cellStr.includes('foreign national') || cellStr.includes('fn')) triggers.push('FN');
+                    else if (cellStr.includes('itin')) triggers.push('ITIN');
                     
-                    if (cellStr.includes('fixed')) triggers.push('Fixed');
+                    // Product Types
+                    if (cellStr.includes('fixed') && !cellStr.includes('arm')) triggers.push('Fixed');
                     else if (cellStr.includes('arm')) triggers.push('ARM');
+                    else if (cellStr.includes('40 year') || cellStr.includes('40yr') || cellStr.includes('40-year')) triggers.push('40Yr');
+                    else if (cellStr.includes('interest only') || cellStr.includes('io')) triggers.push('IO');
+                    
+                    // Tiers
+                    if (cellStr.match(/tier\s*[123]/i)) {
+                        const tierMatch = cellStr.match(/tier\s*([123])/i);
+                        if (tierMatch) triggers.push('Tier' + tierMatch[1]);
+                    }
                 }
             }
             
-            return [...new Set(triggers)].slice(0, 3).join('_') || null;
+            return [...new Set(triggers)].slice(0, 4).join('_') || null;
         }
 
         function displayDetectedGrids() {
@@ -1712,7 +1878,14 @@
                 const btn = document.createElement('button');
                 btn.className = `grid-btn ${grid.selected ? 'selected' : ''}`;
                 btn.textContent = grid.name;
-                const patternInfo = grid.isSingleValueMax ? ' | CLTV min inferred' : '';
+                
+                // Build pattern info string
+                const patterns = [];
+                if (grid.isSingleValueMax) patterns.push('CLTV min inferred');
+                if (grid.isDecimalCLTV) patterns.push('Decimal CLTV');
+                if (grid.isSingleValueFico) patterns.push('FICO max inferred');
+                const patternInfo = patterns.length > 0 ? ' | ' + patterns.join(', ') : '';
+                
                 btn.title = `${grid.type} | ${grid.rowLabels.length}×${grid.cltvHeaders.length} | ${grid.trigger || 'No trigger'}${patternInfo}`;
                 
                 btn.addEventListener('click', (e) => {
@@ -1743,8 +1916,12 @@
             
             // Show badge with pattern detection info
             let badgeText = grid.type.toUpperCase();
-            if (grid.isSingleValueMax) {
-                badgeText += ' • CLTV Min Inferred';
+            const patterns = [];
+            if (grid.isSingleValueMax) patterns.push('CLTV Min Inferred');
+            if (grid.isDecimalCLTV) patterns.push('Decimal %');
+            if (grid.isSingleValueFico) patterns.push('FICO Max Inferred');
+            if (patterns.length > 0) {
+                badgeText += ' • ' + patterns.join(' • ');
             }
             document.getElementById('gridModalBadge').textContent = badgeText;
             
@@ -1755,14 +1932,14 @@
             const table = document.getElementById('gridModalTable');
             
             // Process CLTV headers with inferred min values if needed
-            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax);
+            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax, grid.isDecimalCLTV);
             
             // Build table HTML - show inferred ranges in header if applicable
             let html = '<thead><tr><th></th>';
             processedHeaders.forEach(h => {
                 let headerDisplay = escapeHtml(h.value);
-                if (grid.isSingleValueMax && h.range) {
-                    // Show the inferred range below the original value
+                if ((grid.isSingleValueMax || grid.isDecimalCLTV) && h.range) {
+                    // Show the inferred/converted range below the original value
                     const minStr = h.range.min !== null ? h.range.min.toFixed(2) : '0';
                     const maxStr = h.range.max !== null ? h.range.max : '?';
                     headerDisplay = `${escapeHtml(h.value)}<br><small style="opacity:0.6;font-weight:normal;">${minStr}-${maxStr}</small>`;
@@ -1834,7 +2011,7 @@
             const data = state.sheets[grid.sheetName];
             
             // Process CLTV headers with inferred min values if needed
-            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax);
+            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax, grid.isDecimalCLTV);
             
             // Create transposed LoanNEX format
             const rows = [];
@@ -1900,8 +2077,14 @@
                 });
             });
             
+            // Build info message for toast
+            const patterns = [];
+            if (grid.isSingleValueMax) patterns.push('CLTV min inferred');
+            if (grid.isDecimalCLTV) patterns.push('Decimal converted');
+            const infoStr = patterns.length > 0 ? ' (' + patterns.join(', ') + ')' : '';
+            
             navigator.clipboard.writeText(rows.join('\n')).then(() => {
-                showCopyToast('✓ LoanNEX format copied!' + (grid.isSingleValueMax ? ' (CLTV min inferred)' : ''));
+                showCopyToast('✓ LoanNEX format copied!' + infoStr);
             }).catch(err => {
                 console.error('Copy failed:', err);
                 alert('Copy failed. Please try again.');
@@ -1959,7 +2142,7 @@
             }
             
             // Process CLTV headers with inferred min values if needed
-            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax);
+            const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax, grid.isDecimalCLTV);
             
             const headerRow = createHeaderRow();
             rows.push(headerRow);
