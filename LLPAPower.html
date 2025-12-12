@@ -302,6 +302,14 @@
             color: white;
         }
 
+        .grid-btn.manual {
+            border-style: dashed;
+        }
+
+        .grid-btn.manual.selected {
+            border-style: solid;
+        }
+
         /* Action Buttons */
         .btn {
             display: inline-flex;
@@ -989,81 +997,91 @@
             color: white;
         }
 
-        /* Compact output table - shrink empty columns */
-        .data-table.compact-output {
-            table-layout: fixed;
-        }
-
-        .data-table.compact-output td.empty-col,
-        .data-table.compact-output th.empty-col {
-            width: 12px !important;
-            min-width: 12px !important;
-            max-width: 12px !important;
-            padding: 0.25rem 1px !important;
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            opacity: 0.3;
-            text-align: center;
-            overflow: hidden;
-        }
-
-        .data-table.compact-output td.has-data,
-        .data-table.compact-output th.has-data {
-            min-width: 55px;
+        /* Clean output table - only shows populated columns */
+        .data-table.clean-output {
             width: auto;
-            background: rgba(59, 130, 246, 0.08);
-            border-left: 2px solid var(--accent-blue) !important;
+            min-width: 100%;
         }
 
-        .data-table.compact-output th.has-data {
-            background: rgba(59, 130, 246, 0.2);
-            color: var(--accent-blue-light);
-            font-weight: 600;
-        }
-
-        /* Highlight the value columns (LLPA Rate, Price, Cap) */
-        .data-table.compact-output td.value-col {
-            background: rgba(16, 185, 129, 0.15) !important;
-            font-weight: 700;
+        .data-table.clean-output th,
+        .data-table.clean-output td {
+            padding: 0.5rem 0.75rem;
             min-width: 70px;
-            border-left: 3px solid var(--accent-green) !important;
+            text-align: center;
         }
 
-        .data-table.compact-output th.value-col {
-            background: rgba(16, 185, 129, 0.3) !important;
-            color: var(--accent-green);
+        .data-table.clean-output th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Highlight value columns (LLPA Rate, Price, Cap) */
+        .data-table.clean-output td.value-col {
+            background: rgba(16, 185, 129, 0.1);
             font-weight: 700;
+        }
+
+        .data-table.clean-output th.value-col {
+            background: rgba(16, 185, 129, 0.25);
+            color: var(--accent-green);
         }
         
         /* Output table info bar */
         .output-info-bar {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
             background: var(--bg-tertiary);
             border-bottom: 1px solid var(--border-color);
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
             display: flex;
             gap: 1rem;
         }
         
-        .output-info-bar span {
+        .output-info-bar strong {
+            color: var(--accent-blue);
+        }
+
+        /* Sheet selector for grids */
+        .sheet-grid-selector {
             display: flex;
-            align-items: center;
-            gap: 0.25rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
         }
-        
-        .output-info-bar .has-data-indicator {
-            width: 10px;
-            height: 10px;
+
+        .sheet-grid-tab {
+            padding: 0.4rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .sheet-grid-tab:hover {
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
+        .sheet-grid-tab.active {
             background: var(--accent-blue);
-            border-radius: 2px;
+            border-color: var(--accent-blue);
+            color: white;
         }
-        
-        .output-info-bar .value-indicator {
-            width: 10px;
-            height: 10px;
-            background: var(--accent-green);
-            border-radius: 2px;
+
+        .sheet-grid-tab .grid-count {
+            background: rgba(255,255,255,0.2);
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            margin-left: 0.25rem;
         }
 
         /* Empty State */
@@ -1185,7 +1203,8 @@
                         <div class="card-subtitle" id="gridsSubtitle">0 grids found</div>
                     </div>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">Click any grid to preview & copy</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">Select sheet, then click grid to preview & copy</p>
+                <div class="sheet-grid-selector" id="sheetGridSelector"></div>
                 <div class="grids-container" id="gridsList"></div>
                 <button class="btn btn-secondary btn-full" id="manualSelectBtn" style="margin-top: 1rem;">
                     ✋ Manual Grid Selection
@@ -1386,6 +1405,7 @@
             manualGrids: [],
             outputData: {},
             currentSheet: null,
+            currentGridSheet: null,
             currentGridForModal: null,
             currentOutputTab: null,
             manualSelection: { start: null, end: null },
@@ -2115,20 +2135,63 @@
         }
 
         function displayDetectedGrids() {
-            const container = document.getElementById('gridsList');
-            container.innerHTML = '';
+            const selectorContainer = document.getElementById('sheetGridSelector');
+            const gridsContainer = document.getElementById('gridsList');
+            selectorContainer.innerHTML = '';
+            gridsContainer.innerHTML = '';
             
-            if (state.detectedGrids.length === 0) {
-                container.innerHTML = '<div style="padding: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">No LLPA grids auto-detected. Try manual selection.</div>';
+            // Combine detected and manual grids
+            const allGrids = [...state.detectedGrids, ...state.manualGrids];
+            
+            if (allGrids.length === 0) {
+                gridsContainer.innerHTML = '<div style="padding: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">No LLPA grids auto-detected. Try manual selection.</div>';
                 document.getElementById('gridsSubtitle').textContent = '0 grids found';
                 document.getElementById('processBtn').disabled = true;
                 return;
             }
             
-            state.detectedGrids.forEach((grid, idx) => {
+            // Group grids by sheet
+            const gridsBySheet = {};
+            allGrids.forEach(grid => {
+                if (!gridsBySheet[grid.sheetName]) {
+                    gridsBySheet[grid.sheetName] = [];
+                }
+                gridsBySheet[grid.sheetName].push(grid);
+            });
+            
+            const sheetNames = Object.keys(gridsBySheet);
+            
+            // Set default current sheet if not set or invalid
+            if (!state.currentGridSheet || !gridsBySheet[state.currentGridSheet]) {
+                state.currentGridSheet = sheetNames[0];
+            }
+            
+            // Create sheet tabs
+            sheetNames.forEach(sheetName => {
+                const tab = document.createElement('button');
+                tab.className = `sheet-grid-tab ${sheetName === state.currentGridSheet ? 'active' : ''}`;
+                const count = gridsBySheet[sheetName].length;
+                tab.innerHTML = `${sheetName} <span class="grid-count">${count}</span>`;
+                tab.title = `${count} grids in ${sheetName}`;
+                
+                tab.addEventListener('click', () => {
+                    state.currentGridSheet = sheetName;
+                    displayDetectedGrids();
+                });
+                
+                selectorContainer.appendChild(tab);
+            });
+            
+            // Display grids for current sheet only
+            const currentSheetGrids = gridsBySheet[state.currentGridSheet] || [];
+            
+            currentSheetGrids.forEach((grid, idx) => {
                 const btn = document.createElement('button');
-                btn.className = `grid-btn ${grid.selected ? 'selected' : ''}`;
-                btn.textContent = grid.name;
+                const isManual = grid.type === 'manual';
+                btn.className = `grid-btn ${grid.selected ? 'selected' : ''} ${isManual ? 'manual' : ''}`;
+                // Show name without sheet prefix since we're already in that sheet's context
+                const shortName = grid.name.replace(`${grid.sheetName}-`, '').replace(cleanSheetName(grid.sheetName) + '-', '');
+                btn.textContent = (isManual ? '✋ ' : '') + shortName;
                 
                 // Build pattern info string
                 const patterns = [];
@@ -2144,10 +2207,12 @@
                     openGridModal(grid);
                 });
                 
-                container.appendChild(btn);
+                gridsContainer.appendChild(btn);
             });
             
-            document.getElementById('gridsSubtitle').textContent = `${state.detectedGrids.length} grids found`;
+            const manualCount = state.manualGrids.length;
+            const manualText = manualCount > 0 ? ` (+${manualCount} manual)` : '';
+            document.getElementById('gridsSubtitle').textContent = `${allGrids.length} grids across ${sheetNames.length} sheets${manualText}`;
             updateProcessButton();
         }
 
@@ -2593,54 +2658,61 @@
                 }
             }
             
-            // Count populated dimension columns
-            const populatedCols = colHasData.filter((v, i) => v && !valueColumns.includes(i)).length;
+            // Get only populated column indices
+            const visibleCols = colHasData.map((has, idx) => has ? idx : -1).filter(idx => idx >= 0);
             const dataRows = data.length - 2;
             
+            // Column name mapping for header row
+            const colNames = [
+                'Amount', 'Amt Max', 'Second Lien', 'SL Max', 'HELOC Line', 'HL Max',
+                'HELOC Draw', 'HD Max', 'Combined', 'Comb Max', 'DSCR', 'DSCR Max',
+                'Q.DSCR', 'QD Max', 'Front DTI', 'FD Max', 'Back DTI', 'BD Max',
+                'FICO', 'FICO Max', 'HCLTV', 'HCLTV Max', 'CLTV', 'CLTV Max', 
+                'LTV', 'LTV Max', 'LTL', 'LTL Max', 'Cash Out', 'CO Max',
+                'Cash-in-Hand', 'CIH Max', 'Mo Res', 'MR Max', 'Q Mo Res', 'QMR Max',
+                'Res Inc', 'RI Max', 'Q Res Inc', 'QRI Max', 'House#', 'H# Max',
+                'PPP', 'PPP Max', 'Rate', 'Price', 'Cap'
+            ];
+            
             let html = `<div class="output-info-bar">
-                <span><span class="has-data-indicator"></span> Populated dimensions (${populatedCols})</span>
-                <span><span class="value-indicator"></span> LLPA values</span>
-                <span style="margin-left: auto;">${dataRows} rows ready to paste</span>
+                <span>Showing <strong>${visibleCols.length}</strong> populated columns</span>
+                <span style="margin-left: auto;"><strong>${dataRows}</strong> rows ready to paste</span>
             </div>`;
             
-            html += '<table class="data-table compact-output">';
+            html += '<table class="data-table clean-output">';
             
-            data.forEach((row, rowIdx) => {
+            // Custom header row with friendly names
+            html += '<thead><tr>';
+            visibleCols.forEach(colIdx => {
+                const isValue = valueColumns.includes(colIdx);
+                html += `<th class="${isValue ? 'value-col' : ''}">${colNames[colIdx] || colIdx}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            // Data rows only (skip original header rows 0 and 1)
+            for (let rowIdx = 2; rowIdx < data.length; rowIdx++) {
+                const row = data[rowIdx];
                 html += '<tr>';
-                row.forEach((cell, colIdx) => {
-                    const tag = rowIdx < 2 ? 'th' : 'td';
-                    let cellClasses = [];
+                visibleCols.forEach(colIdx => {
+                    const cell = row[colIdx];
                     let displayVal = cell !== null && cell !== undefined ? cell : '';
+                    let cellClass = '';
                     
-                    // Add column status class
                     if (valueColumns.includes(colIdx)) {
-                        cellClasses.push('value-col');
-                    } else if (colHasData[colIdx]) {
-                        cellClasses.push('has-data');
-                    } else {
-                        cellClasses.push('empty-col');
-                        // For empty columns, show abbreviated header in first row only
-                        if (rowIdx === 0 && displayVal) {
-                            displayVal = String(displayVal).substring(0, 2);
-                        } else if (rowIdx > 0) {
-                            displayVal = '';
-                        }
+                        cellClass = 'value-col';
                     }
                     
-                    // Add value formatting classes
-                    if (displayVal === 'N/A') {
-                        cellClasses.push('cell-na');
-                    } else if (typeof displayVal === 'number') {
-                        cellClasses.push(displayVal > 0 ? 'cell-positive' : displayVal < 0 ? 'cell-negative' : '');
+                    if (typeof displayVal === 'number') {
+                        cellClass += displayVal > 0 ? ' cell-positive' : displayVal < 0 ? ' cell-negative' : '';
                         displayVal = displayVal.toFixed ? displayVal.toFixed(3) : displayVal;
                     }
                     
-                    html += `<${tag} class="${cellClasses.join(' ')}">${escapeHtml(String(displayVal))}</${tag}>`;
+                    html += `<td class="${cellClass}">${escapeHtml(String(displayVal))}</td>`;
                 });
                 html += '</tr>';
-            });
+            }
             
-            html += '</table>';
+            html += '</tbody></table>';
             container.innerHTML = html;
         }
 
@@ -2870,21 +2942,9 @@
             document.getElementById('gridConfigModal').classList.remove('visible');
             closeManualSelection();
             
+            // Switch to the sheet where the manual grid was added
+            state.currentGridSheet = state.currentSheet;
             displayDetectedGrids();
-            
-            const container = document.getElementById('gridsList');
-            const btn = document.createElement('button');
-            btn.className = 'grid-btn selected';
-            btn.textContent = grid.name;
-            btn.title = `Manual | ${rowLabels.length}×${cltvHeaders.length}`;
-            
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openGridModal(grid);
-            });
-            
-            container.appendChild(btn);
-            
             updateProcessButton();
         }
 
