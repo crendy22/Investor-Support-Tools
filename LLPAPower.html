@@ -2129,30 +2129,10 @@
             // Process CLTV headers with inferred min values if needed
             const processedHeaders = processCLTVHeadersWithInferredMin(grid.cltvHeaders, grid.isSingleValueMax, grid.isDecimalCLTV);
             
-            // Create transposed LoanNEX format
+            // Create transposed LoanNEX format - DATA ROWS ONLY (no headers)
             const rows = [];
             
-            // Header row
-            const headerRow = [
-                'Amount', '', 'Second Lien Loan Amount', '', 'HELOC Line Amount', '',
-                'HELOC Draw Amount', '', 'Combined Loan Amount', '', 'DSCR', '',
-                'Q. DSCR', '', 'Front-End DTI', '', 'Back-End DTI', '',
-                'FICO', '', 'HCLTV', '', 'CLTV', '', 'LTV', '', 'LTL', '',
-                'Cash Out', '', 'Cash-in-Hand', '', 'Months Res.', '',
-                'Q Months Res.', '', 'Res. Income', '', 'Q Res. Income', '',
-                'House / Fin. #', '', 'PPP', '', 'LLPA', '', 'Cap'
-            ];
-            rows.push(headerRow.join('\t'));
-            
-            // Min/Max row
-            const minMaxRow = [];
-            for (let i = 0; i < 44; i += 2) {
-                minMaxRow.push('Min', 'Max');
-            }
-            minMaxRow.push('Rate', 'Price', 'Price');
-            rows.push(minMaxRow.join('\t'));
-            
-            // Data rows
+            // Data rows only - skip header and min/max rows since template already has them
             grid.rowLabels.forEach(rowLabel => {
                 const rowRange = parseRange(rowLabel.label);
                 
@@ -2200,7 +2180,7 @@
             const infoStr = patterns.length > 0 ? ' (' + patterns.join(', ') + ')' : '';
             
             navigator.clipboard.writeText(rows.join('\n')).then(() => {
-                showCopyToast('✓ LoanNEX format copied!' + infoStr);
+                showCopyToast(`✓ ${rows.length} rows copied!` + infoStr);
             }).catch(err => {
                 console.error('Copy failed:', err);
                 alert('Copy failed. Please try again.');
@@ -2510,8 +2490,16 @@
             
             const data = state.outputData[state.currentOutputTab];
             
+            // Skip first 2 rows (header row and min/max row) - template already has these
+            const dataRows = data.slice(2);
+            
+            if (dataRows.length === 0) {
+                showCopyToast('❌ No data rows to copy');
+                return;
+            }
+            
             // Convert to TSV format
-            const tsv = data.map(row => 
+            const tsv = dataRows.map(row => 
                 row.map(cell => {
                     if (cell === null || cell === undefined) return '';
                     return String(cell);
@@ -2519,7 +2507,7 @@
             ).join('\n');
             
             navigator.clipboard.writeText(tsv).then(() => {
-                showCopyToast(`✓ "${state.currentOutputTab}" copied to clipboard!`);
+                showCopyToast(`✓ ${dataRows.length} rows copied to clipboard!`);
             }).catch(err => {
                 console.error('Copy failed:', err);
                 alert('Copy failed. Please try again.');
