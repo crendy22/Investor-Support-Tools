@@ -3,28 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLPA Grid Transposer | LoanNEX Investor Support</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Investor Support Tools | LoanNEX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-primary: #0a0f1a;
-            --bg-secondary: #111827;
-            --bg-tertiary: #1f2937;
-            --bg-card: #151d2e;
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
-            --accent-blue: #3b82f6;
-            --accent-blue-light: #60a5fa;
-            --accent-green: #10b981;
-            --accent-amber: #f59e0b;
-            --accent-red: #ef4444;
-            --accent-purple: #8b5cf6;
-            --border-color: #374151;
-            --border-light: #4b5563;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -32,2301 +13,1424 @@
         }
 
         body {
-            font-family: 'IBM Plex Sans', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #000005 0%, #0a0a18 30%, #0f0f24 60%, #0a0a18 100%);
             min-height: 100vh;
-            line-height: 1.6;
+            overflow-x: hidden;
+            color: white;
+        }
+
+        /* Starfield Background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        /* Distant galaxies / nebula */
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.12;
+            pointer-events: none;
+        }
+
+        .nebula-1 {
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse, #4a1a6b 0%, transparent 70%);
+            top: 5%;
+            right: 5%;
+        }
+
+        .nebula-2 {
+            width: 600px;
+            height: 400px;
+            background: radial-gradient(ellipse, #1a3a6b 0%, transparent 70%);
+            bottom: 15%;
+            left: 5%;
+        }
+
+        .nebula-3 {
+            width: 400px;
+            height: 300px;
+            background: radial-gradient(ellipse, #6b1a4a 0%, transparent 70%);
+            top: 60%;
+            right: 30%;
         }
 
         /* Header */
         .header {
-            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 100;
-        }
-
-        .header-content {
-            max-width: 1600px;
-            margin: 0 auto;
+            padding: 24px 50px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-        }
-
-        .logo-section {
-            display: flex;
             align-items: center;
-            gap: 1rem;
+            background: linear-gradient(to bottom, rgba(0,0,5,0.95) 0%, transparent 100%);
         }
 
         .logo {
-            font-size: 1.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 32px;
             font-weight: 700;
-            color: var(--accent-blue-light);
             letter-spacing: -0.5px;
         }
 
         .logo span {
-            color: var(--text-primary);
+            color: #60a5fa;
         }
 
-        .tool-title {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            padding-left: 1rem;
-            border-left: 2px solid var(--border-color);
+        .header-subtitle {
+            color: rgba(255,255,255,0.4);
+            font-size: 18px;
         }
 
-        .nav-link {
+        /* Main Container */
+        .solar-system {
+            position: relative;
+            min-height: 100vh;
+            padding: 120px 40px 160px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 6px;
-            font-size: 0.875rem;
-            color: var(--accent-green);
-            text-decoration: none;
-            transition: all 0.2s;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
 
-        .nav-link:hover {
-            background: rgba(16, 185, 129, 0.2);
-            transform: translateY(-1px);
+        .solar-container {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            min-width: max-content;
+            padding: 0 80px;
         }
 
-        .nav-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-green);
+        /* Sun - TBD */
+        .sun {
+            width: 280px;
+            height: 280px;
             border-radius: 50%;
+            flex-shrink: 0;
+            position: relative;
+            background: 
+                radial-gradient(circle at 30% 30%, #fffaf0 0%, #fff5e0 8%, #ffd700 20%, #ffa500 40%, #ff6b00 60%, #ff4500 75%, #cc2200 90%, #991100 100%);
+            box-shadow: 
+                0 0 100px rgba(255, 150, 0, 0.9),
+                0 0 200px rgba(255, 100, 0, 0.6),
+                0 0 300px rgba(255, 50, 0, 0.4),
+                0 0 400px rgba(255, 30, 0, 0.2),
+                inset -30px -30px 60px rgba(150, 30, 0, 0.5);
+            animation: pulse-sun 4s ease-in-out infinite;
         }
 
-        /* Main Layout */
-        .main-container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 2rem;
-            min-height: calc(100vh - 80px);
-        }
-
-        /* Sidebar */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .card-icon {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(59, 130, 246, 0.1);
-            border-radius: 8px;
-            font-size: 1.25rem;
-        }
-
-        .card-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .card-subtitle {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        /* Upload Zone */
-        .upload-zone {
-            border: 2px dashed var(--border-light);
-            border-radius: 10px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(59, 130, 246, 0.02);
-        }
-
-        .upload-zone:hover, .upload-zone.drag-over {
-            border-color: var(--accent-blue);
-            background: rgba(59, 130, 246, 0.08);
-        }
-
-        .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.6;
-        }
-
-        .upload-text {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-
-        .upload-hint {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        /* File Info */
-        .file-info {
-            display: none;
-            padding: 1rem;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-
-        .file-info.visible {
-            display: block;
-        }
-
-        .file-name {
-            font-weight: 600;
-            color: var(--accent-green);
-            word-break: break-all;
-        }
-
-        .file-meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
-        }
-
-        /* Sheets List */
-        .sheets-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .sheet-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .sheet-item:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .sheet-item.active {
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .sheet-checkbox {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--accent-blue);
-        }
-
-        .sheet-name {
-            flex: 1;
-            font-size: 0.9rem;
-        }
-
-        /* Detected Grids - Now as clickable buttons */
-        .grids-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            padding: 0.5rem 0;
-        }
-
-        .grid-btn {
-            padding: 0.5rem 0.75rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-family: inherit;
-        }
-
-        .grid-btn:hover {
-            border-color: var(--accent-blue);
-            color: var(--text-primary);
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        .grid-btn.selected {
-            background: var(--accent-green);
-            border-color: var(--accent-green);
-            color: white;
-        }
-
-        /* Action Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--accent-blue);
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: var(--accent-blue-light);
-            transform: translateY(-1px);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border-color);
-        }
-
-        .btn-success {
-            background: var(--accent-green);
-            color: white;
-        }
-
-        .btn-success:hover:not(:disabled) {
-            background: #059669;
-        }
-
-        .btn-copy {
-            background: var(--accent-purple);
-            color: white;
-        }
-
-        .btn-copy:hover:not(:disabled) {
-            background: #7c3aed;
-        }
-
-        .btn-full {
+        .sun::before {
+            content: '';
+            position: absolute;
             width: 100%;
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
-        }
-
-        /* Main Content Area */
-        .content-area {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        /* Preview Section */
-        .preview-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .preview-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 1.5rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-bottom: none;
-            border-radius: 12px 12px 0 0;
-        }
-
-        .preview-title {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .preview-tabs {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .preview-tab {
-            padding: 0.5rem 1rem;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .preview-tab.active {
-            background: var(--accent-blue);
-            border-color: var(--accent-blue);
-            color: white;
-        }
-
-        .preview-container {
-            flex: 1;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 0 0 12px 12px;
-            overflow: hidden;
-            min-height: 500px;
-        }
-
-        .table-wrapper {
-            overflow: auto;
             height: 100%;
-            padding: 1rem;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.5) 0%, transparent 35%),
+                radial-gradient(ellipse at 65% 55%, rgba(255,200,100,0.25) 0%, transparent 25%),
+                radial-gradient(ellipse at 40% 75%, rgba(255,150,50,0.2) 0%, transparent 20%);
         }
 
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.8rem;
-            font-family: 'IBM Plex Mono', monospace;
+        .sun::after {
+            content: '';
+            position: absolute;
+            width: 130%;
+            height: 130%;
+            top: -15%;
+            left: -15%;
+            border-radius: 50%;
+            background: radial-gradient(circle, transparent 35%, rgba(255,150,50,0.08) 45%, rgba(255,100,0,0.05) 55%, transparent 65%);
+            animation: corona 12s linear infinite;
         }
 
-        .data-table th, .data-table td {
-            padding: 0.5rem 0.75rem;
-            border: 1px solid var(--border-color);
-            text-align: left;
-            white-space: nowrap;
+        @keyframes corona {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .data-table th {
-            background: var(--bg-tertiary);
+        .sun-label {
+            position: absolute;
+            bottom: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .sun-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
             font-weight: 600;
-            color: var(--text-secondary);
-            position: sticky;
-            top: 0;
+            color: rgba(255,255,255,0.5);
         }
 
-        .data-table tr:hover td {
-            background: rgba(59, 130, 246, 0.05);
+        .sun-label .desc {
+            font-size: 18px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 4px;
         }
 
-        .cell-na {
-            color: var(--accent-red);
-            font-style: italic;
+        @keyframes pulse-sun {
+            0%, 100% { 
+                box-shadow: 0 0 100px rgba(255, 150, 0, 0.9), 0 0 200px rgba(255, 100, 0, 0.6), 0 0 300px rgba(255, 50, 0, 0.4), 0 0 400px rgba(255, 30, 0, 0.2), inset -30px -30px 60px rgba(150, 30, 0, 0.5);
+            }
+            50% { 
+                box-shadow: 0 0 120px rgba(255, 150, 0, 1), 0 0 240px rgba(255, 100, 0, 0.7), 0 0 360px rgba(255, 50, 0, 0.5), 0 0 480px rgba(255, 30, 0, 0.3), inset -30px -30px 60px rgba(150, 30, 0, 0.5);
+            }
         }
 
-        .cell-positive {
-            color: var(--accent-green);
-        }
-
-        .cell-negative {
-            color: var(--accent-red);
-        }
-
-        .cell-header {
-            background: var(--bg-secondary) !important;
-            font-weight: 600;
-        }
-
-        /* Grid Preview Modal - NEW! */
-        .grid-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 500;
-            padding: 2rem;
-            overflow: auto;
-        }
-
-        .grid-modal-overlay.visible {
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-        }
-
-        .grid-modal {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            width: 95vw;
-            max-width: 1400px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .grid-modal-header {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        /* Orbit Line */
+        .orbit-line {
+            height: 2px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
             flex-shrink: 0;
         }
 
-        .grid-modal-title {
-            font-size: 1.1rem;
-            font-weight: 600;
+        /* Planet Container */
+        .planet-wrapper {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.75rem;
+            flex-shrink: 0;
         }
 
-        .grid-modal-badge {
-            font-size: 0.7rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            background: rgba(139, 92, 246, 0.2);
-            color: var(--accent-purple);
-            font-weight: 600;
+        .planet {
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: block;
+            text-decoration: none;
         }
 
-        .grid-modal-actions {
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .grid-modal-body {
-            flex: 1;
-            overflow: auto;
-            padding: 1rem;
-        }
-
-        .grid-modal-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            font-family: 'IBM Plex Mono', monospace;
-        }
-
-        .grid-modal-table th,
-        .grid-modal-table td {
-            padding: 0.6rem 1rem;
-            border: 1px solid var(--border-color);
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        .grid-modal-table th {
-            background: var(--bg-tertiary);
-            font-weight: 600;
-            color: var(--accent-blue-light);
-            position: sticky;
-            top: 0;
+        .planet:hover {
+            transform: scale(1.1);
             z-index: 10;
         }
 
-        .grid-modal-table th:first-child {
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-        }
-
-        .grid-modal-table td:first-child {
-            background: var(--bg-secondary);
-            font-weight: 600;
-            color: var(--accent-amber);
-            text-align: left;
-        }
-
-        .grid-modal-table tbody tr:hover td {
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        .grid-modal-table tbody tr:hover td:first-child {
-            background: rgba(59, 130, 246, 0.2);
-        }
-
-        .grid-modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        .grid-modal-info {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Copy Toast */
-        .copy-toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--accent-green);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-weight: 600;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-            z-index: 1000;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .copy-toast.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* Manual Selection Mode */
-        .manual-mode-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 200;
-            padding: 2rem;
-            overflow: auto;
-        }
-
-        .manual-mode-overlay.visible {
-            display: block;
-        }
-
-        .manual-mode-content {
-            background: var(--bg-card);
-            border-radius: 12px;
-            max-width: 95vw;
-            margin: 0 auto;
-        }
-
-        .manual-mode-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .manual-mode-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .manual-instructions {
-            padding: 1rem 1.5rem;
-            background: rgba(245, 158, 11, 0.1);
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-            color: var(--accent-amber);
-        }
-
-        .manual-table-wrapper {
-            overflow: auto;
-            max-height: 60vh;
-            padding: 1rem;
-        }
-
-        .manual-table td {
-            cursor: crosshair;
-            user-select: none;
-        }
-
-        .manual-table td.selecting {
-            background: rgba(59, 130, 246, 0.3) !important;
-        }
-
-        .manual-table td.selected {
-            background: rgba(16, 185, 129, 0.3) !important;
-        }
-
-        .manual-mode-footer {
-            padding: 1.5rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-
-        /* Grid Config Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 300;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.visible {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            width: 500px;
-            max-width: 90vw;
-        }
-
-        .modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .modal-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-
-        .form-input, .form-select {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-
-        .form-input:focus, .form-select:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-        }
-
-        .modal-footer {
-            padding: 1.5rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-
-        /* Progress Section */
-        .progress-section {
-            padding: 1.5rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-        }
-
-        .progress-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .progress-title {
-            font-weight: 600;
-        }
-
-        .progress-count {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .progress-bar-container {
-            height: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
-
-        /* Output Preview */
-        .output-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .output-tab {
-            padding: 0.5rem 1rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
+        .planet-label {
+            text-align: center;
+            margin-top: 28px;
             max-width: 200px;
+        }
+
+        .planet-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.95);
+            margin-bottom: 6px;
+            line-height: 1.2;
+        }
+
+        .planet-label .desc {
+            font-size: 16px;
+            color: rgba(255,255,255,0.45);
+            line-height: 1.4;
+        }
+
+        /* Mercury */
+        .mercury {
+            width: 70px;
+            height: 70px;
+            background: 
+                radial-gradient(circle at 30% 25%, #d4d4d4 0%, #b8b8b8 15%, #909090 35%, #686868 55%, #484848 75%, #303030 100%);
+            box-shadow: 
+                0 0 30px rgba(150, 150, 150, 0.3),
+                inset -15px -15px 30px rgba(0, 0, 0, 0.6),
+                inset 8px 8px 16px rgba(255, 255, 255, 0.1);
+        }
+
+        .mercury::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(circle at 55% 25%, rgba(0,0,0,0.25) 0%, transparent 12%),
+                radial-gradient(circle at 25% 55%, rgba(0,0,0,0.2) 0%, transparent 18%),
+                radial-gradient(circle at 70% 65%, rgba(0,0,0,0.18) 0%, transparent 10%),
+                radial-gradient(circle at 40% 80%, rgba(0,0,0,0.15) 0%, transparent 8%);
+        }
+
+        /* Venus */
+        .venus {
+            width: 100px;
+            height: 100px;
+            background: 
+                radial-gradient(circle at 30% 25%, #fff8e0 0%, #f5e6b8 15%, #e8d08a 30%, #d4b05c 50%, #c49a3d 70%, #a07820 90%, #806010 100%);
+            box-shadow: 
+                0 0 45px rgba(218, 165, 32, 0.4),
+                0 0 80px rgba(200, 150, 30, 0.2),
+                inset -20px -20px 40px rgba(80, 50, 0, 0.5),
+                inset 10px 10px 25px rgba(255, 255, 200, 0.25);
+        }
+
+        .venus::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(35deg, transparent 30%, rgba(255,255,220,0.15) 45%, transparent 55%),
+                linear-gradient(-25deg, transparent 40%, rgba(255,240,180,0.12) 50%, transparent 60%);
+            animation: venus-clouds 30s linear infinite;
+        }
+
+        @keyframes venus-clouds {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Earth */
+        .earth {
+            width: 110px;
+            height: 110px;
+            position: relative;
+            background: 
+                radial-gradient(circle at 30% 25%, #a8d8ff 0%, #6bb5e8 15%, #3d8bc4 30%, #2a6a9e 45%, #1d5a8a 55%, #2d8855 62%, #238844 70%, #1a6633 80%, #145528 90%, #0f4420 100%);
+            box-shadow: 
+                0 0 50px rgba(65, 105, 225, 0.5),
+                0 0 100px rgba(30, 132, 73, 0.25),
+                inset -22px -22px 44px rgba(0, 20, 50, 0.6),
+                inset 12px 12px 24px rgba(135, 206, 235, 0.35);
+        }
+
+        .earth::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.6) 0%, transparent 22%),
+                radial-gradient(ellipse at 70% 45%, rgba(255,255,255,0.4) 0%, transparent 18%),
+                radial-gradient(ellipse at 25% 65%, rgba(255,255,255,0.35) 0%, transparent 15%);
+            animation: earth-rotate 60s linear infinite;
+        }
+
+        @keyframes earth-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .earth::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: 
+                radial-gradient(circle at 30% 25%, #f0f0f0 0%, #d0d0d0 25%, #a8a8a8 50%, #787878 75%, #585858 100%);
+            border-radius: 50%;
+            top: -30px;
+            right: -12px;
+            box-shadow: 
+                0 0 15px rgba(255,255,255,0.3),
+                inset -5px -5px 10px rgba(0,0,0,0.4);
+        }
+
+        /* Mars */
+        .mars {
+            width: 85px;
+            height: 85px;
+            background: 
+                radial-gradient(circle at 30% 25%, #f4c4a0 0%, #e89870 15%, #d46a4a 35%, #b84a2a 55%, #8c2a0a 75%, #601800 95%);
+            box-shadow: 
+                0 0 40px rgba(205, 92, 69, 0.45),
+                0 0 70px rgba(180, 74, 42, 0.2),
+                inset -18px -18px 36px rgba(40, 8, 0, 0.6),
+                inset 8px 8px 18px rgba(244, 196, 160, 0.25);
+        }
+
+        .mars::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 50% 5%, rgba(255,255,255,0.4) 0%, transparent 20%),
+                radial-gradient(ellipse at 35% 45%, rgba(100,30,0,0.35) 0%, transparent 25%),
+                radial-gradient(circle at 60% 35%, rgba(140,42,10,0.25) 0%, transparent 18%);
+        }
+
+        /* Jupiter */
+        .jupiter {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            position: relative;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-family: inherit;
+            background: 
+                radial-gradient(circle at 30% 25%, #f8e8c8 0%, #e8d4a8 15%, #d4b888 30%, #c4a070 50%, #a88050 70%, #8c6030 90%);
+            box-shadow: 
+                0 0 70px rgba(212, 165, 116, 0.55),
+                0 0 140px rgba(200, 150, 100, 0.25),
+                inset -35px -35px 70px rgba(60, 30, 0, 0.5),
+                inset 18px 18px 36px rgba(255, 240, 200, 0.25);
         }
 
-        .output-tab:hover {
-            border-color: var(--accent-blue);
-            color: var(--text-primary);
+        .jupiter::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(0deg, 
+                    rgba(120, 70, 30, 0.5) 0%,
+                    rgba(200, 160, 120, 0.3) 8%,
+                    rgba(140, 90, 50, 0.45) 14%,
+                    rgba(220, 190, 150, 0.25) 22%,
+                    rgba(160, 100, 50, 0.4) 30%,
+                    rgba(240, 210, 170, 0.2) 38%,
+                    rgba(180, 120, 60, 0.35) 46%,
+                    rgba(210, 180, 140, 0.25) 54%,
+                    rgba(150, 90, 40, 0.4) 62%,
+                    rgba(230, 200, 160, 0.2) 70%,
+                    rgba(170, 110, 50, 0.35) 78%,
+                    rgba(200, 170, 130, 0.3) 86%,
+                    rgba(130, 80, 30, 0.45) 94%,
+                    rgba(100, 60, 20, 0.5) 100%
+                );
         }
 
-        .output-tab.active {
-            background: var(--accent-blue);
-            border-color: var(--accent-blue);
-            color: white;
+        .jupiter::after {
+            content: '';
+            position: absolute;
+            width: 45px;
+            height: 30px;
+            background: 
+                radial-gradient(ellipse, #e85530 0%, #cc4422 40%, #aa3015 70%, #882510 100%);
+            border-radius: 50%;
+            top: 48%;
+            left: 22%;
+            box-shadow: inset 3px 3px 8px rgba(255,120,80,0.4);
+            transform: rotate(-10deg);
         }
 
-        /* Empty State */
-        .empty-state {
+        /* Saturn */
+        .saturn-wrapper {
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
+            flex-shrink: 0;
+        }
+
+        .saturn-system {
+            position: relative;
+            width: 260px;
+            height: 160px;
+            display: flex;
+            align-items: center;
             justify-content: center;
+        }
+
+        .saturn {
+            width: 130px;
+            height: 130px;
+            background: 
+                radial-gradient(circle at 30% 25%, #fdf8e8 0%, #f4e8c4 15%, #e8d498 30%, #d4b868 50%, #c4a040 70%, #a88020 90%);
+            box-shadow: 
+                0 0 55px rgba(244, 213, 158, 0.45),
+                0 0 100px rgba(212, 184, 104, 0.2),
+                inset -26px -26px 52px rgba(80, 50, 0, 0.45),
+                inset 14px 14px 28px rgba(255, 255, 220, 0.25);
+            z-index: 2;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            position: relative;
+        }
+
+        .saturn:hover {
+            transform: scale(1.08);
+        }
+
+        .saturn::before {
+            content: '';
+            position: absolute;
+            width: 100%;
             height: 100%;
-            padding: 3rem;
+            border-radius: 50%;
+            background: 
+                linear-gradient(0deg,
+                    rgba(168, 128, 32, 0.35) 0%,
+                    rgba(212, 184, 104, 0.2) 15%,
+                    rgba(196, 160, 64, 0.3) 30%,
+                    rgba(232, 212, 152, 0.15) 45%,
+                    rgba(180, 140, 48, 0.25) 60%,
+                    rgba(244, 232, 196, 0.1) 75%,
+                    rgba(164, 124, 28, 0.3) 90%,
+                    rgba(140, 100, 20, 0.35) 100%
+                );
+        }
+
+        .saturn-ring {
+            position: absolute;
+            width: 260px;
+            height: 70px;
+            border-radius: 50%;
+            transform: rotateX(75deg);
+            z-index: 1;
+            background: 
+                radial-gradient(ellipse, 
+                    transparent 42%,
+                    rgba(180, 160, 120, 0.15) 44%,
+                    rgba(210, 190, 150, 0.55) 48%,
+                    rgba(190, 170, 130, 0.7) 52%,
+                    rgba(170, 150, 110, 0.5) 56%,
+                    rgba(140, 120, 80, 0.2) 60%,
+                    transparent 62%,
+                    rgba(160, 140, 100, 0.3) 64%,
+                    rgba(200, 180, 140, 0.6) 68%,
+                    rgba(180, 160, 120, 0.65) 72%,
+                    rgba(160, 140, 100, 0.4) 76%,
+                    rgba(140, 120, 80, 0.25) 80%,
+                    rgba(120, 100, 60, 0.15) 85%,
+                    transparent 90%
+                );
+            pointer-events: none;
+        }
+
+        .saturn-ring-front {
+            position: absolute;
+            width: 260px;
+            height: 70px;
+            border-radius: 50%;
+            transform: rotateX(75deg);
+            z-index: 3;
+            background: 
+                radial-gradient(ellipse, 
+                    transparent 42%,
+                    rgba(200, 180, 140, 0.4) 48%,
+                    rgba(180, 160, 120, 0.5) 54%,
+                    transparent 62%
+                );
+            pointer-events: none;
+        }
+
+        /* Uranus */
+        .uranus {
+            width: 105px;
+            height: 105px;
+            background: 
+                radial-gradient(circle at 35% 30%, #e8ffff 0%, #c0f0f0 15%, #88e0e0 30%, #50c8c8 50%, #30b0b0 70%, #1890a0 85%, #107080 100%);
+            box-shadow: 
+                0 0 50px rgba(64, 224, 208, 0.45),
+                0 0 90px rgba(32, 178, 170, 0.2),
+                inset -22px -22px 44px rgba(0, 60, 70, 0.5),
+                inset 12px 12px 24px rgba(224, 255, 255, 0.35);
+        }
+
+        .uranus::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(85deg, transparent 35%, rgba(255,255,255,0.12) 45%, transparent 55%);
+        }
+
+        /* Neptune */
+        .neptune {
+            width: 100px;
+            height: 100px;
+            background: 
+                radial-gradient(circle at 30% 25%, #c8d8f8 0%, #90b0e8 15%, #5888d8 30%, #3060c0 50%, #1840a0 70%, #102878 90%, #081850 100%);
+            box-shadow: 
+                0 0 50px rgba(65, 105, 225, 0.55),
+                0 0 90px rgba(0, 0, 205, 0.25),
+                inset -20px -20px 40px rgba(0, 0, 50, 0.6),
+                inset 10px 10px 22px rgba(176, 196, 222, 0.35);
+        }
+
+        .neptune::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 55% 35%, rgba(255,255,255,0.2) 0%, transparent 18%),
+                radial-gradient(ellipse at 40% 60%, rgba(16,40,120,0.4) 0%, transparent 20%);
+        }
+
+        /* Pluto */
+        .pluto {
+            width: 45px;
+            height: 45px;
+            background: 
+                radial-gradient(circle at 30% 25%, #f0e8d8 0%, #d4c8b0 25%, #b8a888 50%, #907858 75%, #685038 100%);
+            box-shadow: 
+                0 0 20px rgba(200, 180, 150, 0.35),
+                inset -8px -8px 18px rgba(40, 25, 10, 0.5),
+                inset 4px 4px 10px rgba(240, 232, 216, 0.2);
+        }
+
+        .pluto::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 45% 50%, rgba(255,250,240,0.35) 0%, transparent 30%);
+        }
+
+        /* ========== COMET - Bulk Test Analyzer ========== */
+        .comet {
+            position: fixed;
+            top: 18%;
+            left: 5%;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            z-index: 50;
+            animation: comet-fly 12s linear infinite;
+            text-decoration: none;
+        }
+
+        .comet:hover {
+            animation-play-state: paused;
+        }
+
+        .comet:hover .comet-label {
+            opacity: 1;
+        }
+
+        @keyframes comet-fly {
+            0% {
+                transform: translate(0, 0) rotate(-25deg);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(calc(100vw - 100px), 35vh) rotate(-25deg);
+                opacity: 0;
+            }
+        }
+
+        /* Comet nucleus (head) */
+        .comet-head {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: 
+                radial-gradient(circle at 35% 35%, #ffffff 0%, #e8f4ff 20%, #a8d4ff 40%, #60b0f0 60%, #3090e0 80%, #1070c0 100%);
+            box-shadow: 
+                0 0 30px rgba(100, 180, 255, 0.9),
+                0 0 60px rgba(80, 160, 255, 0.7),
+                0 0 100px rgba(60, 140, 255, 0.5),
+                0 0 150px rgba(40, 120, 255, 0.3),
+                inset -8px -8px 20px rgba(0, 60, 120, 0.3),
+                inset 5px 5px 15px rgba(255, 255, 255, 0.5);
+            z-index: 3;
+        }
+
+        /* Coma (gas around nucleus) */
+        .comet-coma {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            top: -15px;
+            left: -15px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(150, 200, 255, 0.4) 0%, rgba(100, 180, 255, 0.2) 40%, transparent 70%);
+            z-index: 2;
+            animation: coma-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes coma-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+
+        /* Main tail */
+        .comet-tail {
+            position: absolute;
+            top: 15px;
+            left: 40px;
+            width: 350px;
+            height: 60px;
+            background: linear-gradient(90deg, 
+                rgba(150, 200, 255, 0.8) 0%,
+                rgba(120, 180, 255, 0.5) 10%,
+                rgba(100, 160, 255, 0.3) 25%,
+                rgba(80, 140, 255, 0.15) 50%,
+                rgba(60, 120, 255, 0.05) 75%,
+                transparent 100%
+            );
+            transform: perspective(200px) rotateY(-5deg);
+            transform-origin: left center;
+            clip-path: polygon(0% 35%, 100% 20%, 100% 80%, 0% 65%);
+            z-index: 1;
+            animation: tail-wave 2s ease-in-out infinite;
+        }
+
+        @keyframes tail-wave {
+            0%, 100% { 
+                clip-path: polygon(0% 35%, 100% 15%, 100% 75%, 0% 65%);
+            }
+            50% { 
+                clip-path: polygon(0% 35%, 100% 25%, 100% 85%, 0% 65%);
+            }
+        }
+
+        /* Secondary dust tail */
+        .comet-tail-dust {
+            position: absolute;
+            top: 20px;
+            left: 35px;
+            width: 280px;
+            height: 40px;
+            background: linear-gradient(95deg, 
+                rgba(255, 220, 180, 0.5) 0%,
+                rgba(255, 200, 150, 0.3) 15%,
+                rgba(255, 180, 120, 0.15) 40%,
+                rgba(255, 160, 100, 0.05) 70%,
+                transparent 100%
+            );
+            transform: perspective(200px) rotateY(-8deg) rotate(8deg);
+            transform-origin: left center;
+            clip-path: polygon(0% 40%, 100% 10%, 100% 60%, 0% 60%);
+            z-index: 1;
+            animation: dust-wave 2.5s ease-in-out infinite;
+        }
+
+        @keyframes dust-wave {
+            0%, 100% { 
+                transform: perspective(200px) rotateY(-8deg) rotate(8deg);
+            }
+            50% { 
+                transform: perspective(200px) rotateY(-8deg) rotate(12deg);
+            }
+        }
+
+        /* Sparkles in tail */
+        .comet-sparkles {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            width: 250px;
+            height: 50px;
+            z-index: 2;
+        }
+
+        .comet-sparkle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: sparkle-fade 1s ease-in-out infinite;
+        }
+
+        @keyframes sparkle-fade {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .comet-label {
+            position: absolute;
+            top: 75px;
+            left: 50%;
+            transform: translateX(-50%);
             text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+            z-index: 10;
         }
 
-        .empty-icon {
-            font-size: 4rem;
-            opacity: 0.3;
-            margin-bottom: 1rem;
-        }
-
-        .empty-title {
-            font-size: 1.1rem;
+        .comet-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
             font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            color: rgba(255,255,255,0.95);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
         }
 
-        .empty-text {
-            font-size: 0.9rem;
-            color: var(--text-muted);
+        .comet-label .desc {
+            font-size: 15px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
+        .comet-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0 3px 15px rgba(249, 115, 22, 0.6);
+            z-index: 10;
+        }
+
+        /* ========== SATELLITE - Bulk Pricing Tool ========== */
+        .satellite {
+            position: fixed;
+            bottom: 22%;
+            right: 8%;
+            width: 180px;
+            height: 120px;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.3s ease;
+            animation: satellite-orbit 25s ease-in-out infinite;
+            text-decoration: none;
+        }
+
+        .satellite:hover {
+            transform: scale(1.1);
+        }
+
+        .satellite:hover .satellite-label {
+            opacity: 1;
+        }
+
+        @keyframes satellite-orbit {
+            0%, 100% { transform: translate(0, 0) rotate(-5deg); }
+            25% { transform: translate(-30px, -20px) rotate(0deg); }
+            50% { transform: translate(-15px, 15px) rotate(5deg); }
+            75% { transform: translate(20px, -10px) rotate(-2deg); }
+        }
+
+        /* Main satellite body */
+        .satellite-body {
+            position: absolute;
+            top: 40px;
+            left: 65px;
+            width: 50px;
+            height: 35px;
+            background: linear-gradient(180deg, #e0e0e0 0%, #a0a0a0 50%, #707070 100%);
+            border-radius: 5px;
+            box-shadow: 
+                0 0 20px rgba(255, 255, 255, 0.3),
+                inset 0 -10px 20px rgba(0, 0, 0, 0.3),
+                inset 0 5px 10px rgba(255, 255, 255, 0.4);
+            z-index: 3;
+        }
+
+        /* Gold foil wrapping */
+        .satellite-body::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 40px;
+            height: 25px;
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 30%, #b8860b 60%, #daa520 100%);
+            border-radius: 3px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Antenna dish */
+        .satellite-dish {
+            position: absolute;
+            top: 15px;
+            left: 75px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ffffff 0%, #c0c0c0 50%, #808080 100%);
+            box-shadow: 
+                inset -5px -5px 15px rgba(0, 0, 0, 0.4),
+                0 0 15px rgba(255, 255, 255, 0.3);
+            z-index: 4;
+        }
+
+        .satellite-dish::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 8px;
             height: 8px;
+            background: radial-gradient(circle, #ff4444 0%, #cc0000 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+            animation: beacon-blink 2s ease-in-out infinite;
         }
 
-        ::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
+        @keyframes beacon-blink {
+            0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+            50% { opacity: 0.3; box-shadow: 0 0 5px rgba(255, 0, 0, 0.4); }
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 4px;
+        /* Antenna arm */
+        .satellite-antenna {
+            position: absolute;
+            top: 28px;
+            left: 88px;
+            width: 4px;
+            height: 25px;
+            background: linear-gradient(90deg, #808080 0%, #c0c0c0 50%, #808080 100%);
+            transform: rotate(-30deg);
+            transform-origin: bottom center;
+            z-index: 2;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border-light);
+        /* Left solar panel */
+        .solar-panel-left {
+            position: absolute;
+            top: 35px;
+            left: 0;
+            width: 60px;
+            height: 50px;
+            background: linear-gradient(180deg, #1a1a3a 0%, #2a2a5a 50%, #1a1a3a 100%);
+            border: 2px solid #404080;
+            border-radius: 3px;
+            box-shadow: 
+                0 0 20px rgba(60, 60, 150, 0.4),
+                inset 0 0 30px rgba(80, 80, 200, 0.2);
+            z-index: 2;
         }
 
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .main-container {
-                grid-template-columns: 1fr;
-            }
+        /* Solar panel grid lines */
+        .solar-panel-left::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 48%, rgba(100, 100, 200, 0.5) 49%, rgba(100, 100, 200, 0.5) 51%, transparent 52%),
+                linear-gradient(0deg, transparent 30%, rgba(100, 100, 200, 0.3) 31%, rgba(100, 100, 200, 0.3) 33%, transparent 34%, transparent 63%, rgba(100, 100, 200, 0.3) 64%, rgba(100, 100, 200, 0.3) 66%, transparent 67%);
+        }
+
+        /* Panel connector left */
+        .solar-panel-left::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -8px;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 12px;
+            background: linear-gradient(180deg, #808080 0%, #505050 100%);
+            border-radius: 2px;
+        }
+
+        /* Right solar panel */
+        .solar-panel-right {
+            position: absolute;
+            top: 35px;
+            right: 0;
+            width: 60px;
+            height: 50px;
+            background: linear-gradient(180deg, #1a1a3a 0%, #2a2a5a 50%, #1a1a3a 100%);
+            border: 2px solid #404080;
+            border-radius: 3px;
+            box-shadow: 
+                0 0 20px rgba(60, 60, 150, 0.4),
+                inset 0 0 30px rgba(80, 80, 200, 0.2);
+            z-index: 2;
+        }
+
+        .solar-panel-right::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 48%, rgba(100, 100, 200, 0.5) 49%, rgba(100, 100, 200, 0.5) 51%, transparent 52%),
+                linear-gradient(0deg, transparent 30%, rgba(100, 100, 200, 0.3) 31%, rgba(100, 100, 200, 0.3) 33%, transparent 34%, transparent 63%, rgba(100, 100, 200, 0.3) 64%, rgba(100, 100, 200, 0.3) 66%, transparent 67%);
+        }
+
+        .solar-panel-right::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -8px;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 12px;
+            background: linear-gradient(180deg, #808080 0%, #505050 100%);
+            border-radius: 2px;
+        }
+
+        /* Solar panel glow animation */
+        .satellite:hover .solar-panel-left,
+        .satellite:hover .solar-panel-right {
+            box-shadow: 
+                0 0 30px rgba(60, 60, 200, 0.6),
+                inset 0 0 40px rgba(100, 100, 255, 0.3);
+        }
+
+        .satellite-label {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .satellite-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.95);
+        }
+
+        .satellite-label .desc {
+            font-size: 15px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+        }
+
+        .satellite-badge {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0 3px 15px rgba(59, 130, 246, 0.6);
+            z-index: 10;
+        }
+
+        /* ========== ASTEROID - Bulk Pricer CR ========== */
+        .asteroid {
+            position: fixed;
+            top: 65%;
+            right: 25%;
+            width: 100px;
+            height: 75px;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.3s ease;
+            animation: float-asteroid 8s ease-in-out infinite;
+            text-decoration: none;
+        }
+
+        .asteroid:hover {
+            transform: scale(1.15) rotate(8deg);
+        }
+
+        .asteroid:hover .asteroid-label {
+            opacity: 1;
+        }
+
+        .asteroid-body {
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 30% 30%, #b8a890 0%, #8c7860 30%, #605040 60%, #403020 90%);
+            border-radius: 42% 58% 55% 45% / 48% 42% 58% 52%;
+            box-shadow: 
+                0 0 30px rgba(100, 80, 60, 0.45),
+                inset -18px -15px 35px rgba(0, 0, 0, 0.6),
+                inset 10px 10px 20px rgba(200, 180, 160, 0.2);
+            position: relative;
+        }
+
+        .asteroid-body::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: 
+                radial-gradient(circle at 22% 30%, rgba(0,0,0,0.4) 0%, transparent 18%),
+                radial-gradient(circle at 55% 20%, rgba(0,0,0,0.3) 0%, transparent 14%),
+                radial-gradient(circle at 40% 60%, rgba(0,0,0,0.35) 0%, transparent 22%),
+                radial-gradient(circle at 75% 50%, rgba(0,0,0,0.25) 0%, transparent 12%);
+        }
+
+        .asteroid-label {
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .asteroid-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.95);
+        }
+
+        .asteroid-label .desc {
+            font-size: 15px;
+            color: rgba(255,255,255,0.45);
+            margin-top: 4px;
+        }
+
+        .asteroid-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.5);
+        }
+
+        @keyframes float-asteroid {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-40px, 25px) rotate(8deg); }
+            50% { transform: translate(-15px, -20px) rotate(-5deg); }
+            75% { transform: translate(30px, 15px) rotate(12deg); }
+        }
+
+        /* Legend */
+        .legend {
+            position: fixed;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 20, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 18px 32px;
+            display: flex;
+            gap: 32px;
+            z-index: 100;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            color: rgba(255,255,255,0.55);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.data { background: linear-gradient(135deg, #4169e1, #1e8449); }
+        .legend-dot.tools { background: linear-gradient(135deg, #60b0f0, #3090e0); }
+        .legend-dot.beta { background: linear-gradient(135deg, #705030, #a09080); }
+
+        /* Scroll hint */
+        .scroll-hint {
+            position: fixed;
+            right: 35px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.25);
+            font-size: 14px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            animation: bounce-right 2s infinite;
+        }
+
+        @keyframes bounce-right {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            50% { transform: translateY(-50%) translateX(5px); }
         }
     </style>
 </head>
 <body>
+    <!-- Nebulae -->
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <!-- Starfield -->
+    <div class="stars" id="stars"></div>
+
+    <!-- COMET - Bulk Test Analyzer -->
+    <a href="Bulk-Test-Analyzer.html" target="_blank" class="comet">
+        <div class="comet-coma"></div>
+        <div class="comet-head"></div>
+        <div class="comet-tail"></div>
+        <div class="comet-tail-dust"></div>
+        <div class="comet-sparkles" id="comet-sparkles"></div>
+        <div class="comet-badge">NEW</div>
+        <div class="comet-label">
+            <div class="name">Bulk Test Analyzer</div>
+            <div class="desc">Outliers & coverage gaps</div>
+        </div>
+    </a>
+
+    <!-- SATELLITE - Bulk Pricing Tool -->
+    <a href="https://loannex.app.n8n.cloud/form/e571f1ec-f269-43ff-aa85-8696d21e1255" target="_blank" class="satellite">
+        <div class="solar-panel-left"></div>
+        <div class="solar-panel-right"></div>
+        <div class="satellite-body"></div>
+        <div class="satellite-antenna"></div>
+        <div class="satellite-dish"></div>
+        <div class="satellite-badge">BETA</div>
+        <div class="satellite-label">
+            <div class="name">Bulk Pricing Tool</div>
+            <div class="desc">n8n workflow</div>
+        </div>
+    </a>
+
+    <!-- ASTEROID - Bulk Pricer CR -->
+    <a href="https://crendy22.github.io/loannex-webapp/" target="_blank" class="asteroid">
+        <div class="asteroid-body"></div>
+        <div class="asteroid-badge">BETA</div>
+        <div class="asteroid-label">
+            <div class="name">Bulk Pricer CR</div>
+            <div class="desc">Prototype webapp</div>
+        </div>
+    </a>
+
     <!-- Header -->
     <header class="header">
-        <div class="header-content">
-            <div class="logo-section">
-                <div class="logo">Loan<span>NEX</span></div>
-                <div class="tool-title">LLPA Grid Transposer</div>
-            </div>
-            <a href="index.html" class="nav-link">
-                <span class="nav-dot"></span>
-                Investor Support Tools
-            </a>
-        </div>
+        <div class="logo">Loan<span>NEX</span></div>
+        <div class="header-subtitle">Investor Support Tools</div>
     </header>
 
-    <!-- Main Container -->
-    <div class="main-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <!-- Upload Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">📁</div>
-                    <div>
-                        <div class="card-title">Import Rate Sheet</div>
-                        <div class="card-subtitle">Upload investor xlsx file</div>
-                    </div>
-                </div>
-                
-                <div class="upload-zone" id="uploadZone">
-                    <div class="upload-icon">📤</div>
-                    <div class="upload-text">Drop rate sheet here or click to browse</div>
-                    <div class="upload-hint">Supports .xlsx, .xls files</div>
-                </div>
-                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
-                
-                <div class="file-info" id="fileInfo">
-                    <div class="file-name" id="fileName"></div>
-                    <div class="file-meta" id="fileMeta"></div>
+    <!-- Solar System -->
+    <div class="solar-system">
+        <div class="solar-container">
+            
+            <!-- Sun - TBD -->
+            <div class="sun">
+                <div class="sun-label">
+                    <div class="name">TBD</div>
+                    <div class="desc">Coming Soon</div>
                 </div>
             </div>
 
-            <!-- Sheets Card -->
-            <div class="card" id="sheetsCard" style="display: none;">
-                <div class="card-header">
-                    <div class="card-icon">📑</div>
-                    <div>
-                        <div class="card-title">Sheet Tabs</div>
-                        <div class="card-subtitle" id="sheetsSubtitle">Select tabs to process</div>
-                    </div>
-                </div>
-                <div class="sheets-list" id="sheetsList"></div>
-            </div>
+            <div class="orbit-line" style="width: 80px;"></div>
 
-            <!-- Detected Grids Card -->
-            <div class="card" id="gridsCard" style="display: none;">
-                <div class="card-header">
-                    <div class="card-icon">📊</div>
-                    <div>
-                        <div class="card-title">Detected LLPA Grids</div>
-                        <div class="card-subtitle" id="gridsSubtitle">0 grids found</div>
-                    </div>
-                </div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">Click any grid to preview & copy</p>
-                <div class="grids-container" id="gridsList"></div>
-                <button class="btn btn-secondary btn-full" id="manualSelectBtn" style="margin-top: 1rem;">
-                    ✋ Manual Grid Selection
-                </button>
-            </div>
-
-            <!-- Actions Card -->
-            <div class="card" id="actionsCard" style="display: none;">
-                <button class="btn btn-primary btn-full" id="processBtn" disabled>
-                    ⚙️ Process Selected Grids
-                </button>
-                <button class="btn btn-success btn-full" id="downloadBtn" style="margin-top: 0.75rem; display: none;">
-                    📥 Download LoanNEX LLPA File
-                </button>
-            </div>
-        </aside>
-
-        <!-- Content Area -->
-        <main class="content-area">
-            <!-- Preview Section -->
-            <div class="preview-section">
-                <div class="preview-header">
-                    <div class="preview-title" id="previewTitle">Sheet Preview</div>
-                    <div class="preview-tabs" id="previewTabs">
-                        <button class="preview-tab active" data-view="source">Source Data</button>
-                        <button class="preview-tab" data-view="output">Output Preview</button>
-                    </div>
-                </div>
-                <div class="preview-container">
-                    <div id="sourceView" class="table-wrapper">
-                        <div class="empty-state">
-                            <div class="empty-icon">📊</div>
-                            <div class="empty-title">No Rate Sheet Loaded</div>
-                            <div class="empty-text">Upload an investor rate sheet to get started</div>
-                        </div>
-                    </div>
-                    <div id="outputView" class="table-wrapper" style="display: none;">
-                        <div class="output-tabs" id="outputTabs"></div>
-                        <div id="outputTableContainer">
-                            <div class="empty-state">
-                                <div class="empty-icon">📋</div>
-                                <div class="empty-title">No Output Generated</div>
-                                <div class="empty-text">Process grids to see LoanNEX format output</div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Mercury - Quick Quote Insights -->
+            <div class="planet-wrapper">
+                <a href="https://claude.ai/public/artifacts/f5a192f5-fe25-4e3a-9eae-f7190a95225d" target="_blank" class="planet mercury"></a>
+                <div class="planet-label">
+                    <div class="name">Quick Quote Insights</div>
+                    <div class="desc">Quote trends & metrics</div>
                 </div>
             </div>
 
-            <!-- Progress Section -->
-            <div class="progress-section" id="progressSection" style="display: none;">
-                <div class="progress-header">
-                    <div class="progress-title" id="progressTitle">Processing...</div>
-                    <div class="progress-count" id="progressCount">0 / 0</div>
-                </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
-                </div>
-            </div>
-        </main>
-    </div>
+            <div class="orbit-line" style="width: 100px;"></div>
 
-    <!-- Grid Preview Modal - NEW! -->
-    <div class="grid-modal-overlay" id="gridModalOverlay">
-        <div class="grid-modal">
-            <div class="grid-modal-header">
-                <div class="grid-modal-title">
-                    <span id="gridModalName">Grid Name</span>
-                    <span class="grid-modal-badge" id="gridModalBadge">FICO × CLTV</span>
-                </div>
-                <div class="grid-modal-actions">
-                    <button class="btn btn-copy btn-sm" id="copyGridBtn">📋 Copy Grid</button>
-                    <button class="btn btn-secondary btn-sm" id="closeGridModalBtn">✕ Close</button>
+            <!-- Venus - API Dashboard -->
+            <div class="planet-wrapper">
+                <a href="https://claude.ai/public/artifacts/5df10810-27f2-4f4d-9697-1ba764db3fad" target="_blank" class="planet venus"></a>
+                <div class="planet-label">
+                    <div class="name">API Dashboard</div>
+                    <div class="desc">Performance & health</div>
                 </div>
             </div>
-            <div class="grid-modal-body">
-                <table class="grid-modal-table" id="gridModalTable">
-                    <!-- Table will be populated by JS -->
-                </table>
-            </div>
-            <div class="grid-modal-footer">
-                <div class="grid-modal-info" id="gridModalInfo">
-                    <span id="gridModalDimensions">8 rows × 12 columns</span> | 
-                    <span id="gridModalSheet">Sheet: ALLY</span>
+
+            <div class="orbit-line" style="width: 110px;"></div>
+
+            <!-- Earth - Lock Analytics -->
+            <div class="planet-wrapper">
+                <a href="Lock-Analytics.html" target="_blank" class="planet earth"></a>
+                <div class="planet-label">
+                    <div class="name">Lock Analytics</div>
+                    <div class="desc">Activity & patterns</div>
                 </div>
-                <button class="btn btn-success btn-sm" id="copyTransposedBtn">📋 Copy for LoanNEX (Transposed)</button>
             </div>
+
+            <div class="orbit-line" style="width: 100px;"></div>
+
+            <!-- Mars - Investor Reports -->
+            <div class="planet-wrapper">
+                <a href="BuysidePricingTiersKA.html" target="_blank" class="planet mars"></a>
+                <div class="planet-label">
+                    <div class="name">Investor Reports</div>
+                    <div class="desc">Pricing tier reports</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 130px;"></div>
+
+            <!-- Jupiter - CLM Generator -->
+            <div class="planet-wrapper">
+                <a href="clm-generator.html" target="_blank" class="planet jupiter"></a>
+                <div class="planet-label">
+                    <div class="name">PHH CLM Generator</div>
+                    <div class="desc">Client Level Margin files</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 110px;"></div>
+
+            <!-- Saturn - Buyer-Seller Analysis -->
+            <div class="saturn-wrapper">
+                <div class="saturn-system">
+                    <a href="Counterparty-Analysis.html" target="_blank" class="saturn"></a>
+                    <div class="saturn-ring"></div>
+                    <div class="saturn-ring-front"></div>
+                </div>
+                <div class="planet-label" style="margin-top: 12px;">
+                    <div class="name">Buyer-Seller Analysis</div>
+                    <div class="desc">Counterparty relationships</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 110px;"></div>
+
+            <!-- Uranus - LLPA Grid Transposer -->
+            <div class="planet-wrapper">
+                <a href="LLPAPower.html" target="_blank" class="planet uranus"></a>
+                <div class="planet-label">
+                    <div class="name">LLPA Transposer</div>
+                    <div class="desc">Rate sheet → LoanNEX</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 110px;"></div>
+
+            <!-- Neptune placeholder -->
+            <div class="planet-wrapper">
+                <a href="#" class="planet neptune" style="cursor: default; opacity: 0.5;"></a>
+                <div class="planet-label">
+                    <div class="name" style="color: rgba(255,255,255,0.4);">Coming Soon</div>
+                    <div class="desc">Future tool</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 100px;"></div>
+
+            <!-- Pluto - Request a Tool -->
+            <div class="planet-wrapper">
+                <a href="https://www.golfdigest.com/courses/nj/pine-valley-golf-club" target="_blank" class="planet pluto"></a>
+                <div class="planet-label">
+                    <div class="name">Request a Tool</div>
+                    <div class="desc">🏌️ Submit ideas</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 140px;"></div>
+
         </div>
     </div>
 
-    <!-- Copy Toast -->
-    <div class="copy-toast" id="copyToast">✓ Copied to clipboard!</div>
-
-    <!-- Manual Selection Modal -->
-    <div class="manual-mode-overlay" id="manualOverlay">
-        <div class="manual-mode-content">
-            <div class="manual-mode-header">
-                <div class="manual-mode-title">Manual Grid Selection</div>
-                <button class="btn btn-secondary" id="closeManualBtn">✕ Close</button>
-            </div>
-            <div class="manual-instructions">
-                <strong>Instructions:</strong> Click and drag to select a rectangular region containing an LLPA grid. 
-                The first row should contain column headers (CLTV ranges), and the first column should contain row labels (FICO ranges or adjustment types).
-            </div>
-            <div class="manual-table-wrapper" id="manualTableWrapper"></div>
-            <div class="manual-mode-footer">
-                <button class="btn btn-secondary" id="clearSelectionBtn">Clear Selection</button>
-                <button class="btn btn-primary" id="confirmSelectionBtn">Configure Selected Grid</button>
-            </div>
+    <!-- Legend -->
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-dot data"></div>
+            <span>Planets = Core Tools</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot tools"></div>
+            <span>Comet = New Tool</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot beta"></div>
+            <span>Asteroid/Satellite = Beta</span>
         </div>
     </div>
 
-    <!-- Grid Config Modal -->
-    <div class="modal-overlay" id="gridConfigModal">
-        <div class="modal">
-            <div class="modal-header">
-                <div class="modal-title">Configure Grid</div>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Grid Name / Tab Name</label>
-                    <input type="text" class="form-input" id="gridNameInput" placeholder="e.g., PHH-FullDoc-FICO_CLTV">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Row Dimension</label>
-                    <select class="form-select" id="rowDimSelect">
-                        <option value="fico">FICO Score</option>
-                        <option value="amount">Loan Amount</option>
-                        <option value="dti">DTI</option>
-                        <option value="ltv">LTV</option>
-                        <option value="state">State</option>
-                        <option value="other">Other (Label Only)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Column Dimension</label>
-                    <select class="form-select" id="colDimSelect">
-                        <option value="cltv">CLTV</option>
-                        <option value="ltv">LTV</option>
-                        <option value="amount">Loan Amount</option>
-                        <option value="dti">DTI</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Value Type</label>
-                    <select class="form-select" id="valueTypeSelect">
-                        <option value="price">Price Adjustment</option>
-                        <option value="rate">Rate Adjustment</option>
-                        <option value="cap">Price Cap</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Trigger / Context (optional)</label>
-                    <input type="text" class="form-input" id="gridTriggerInput" placeholder="e.g., Full Doc, Condo, Primary Purchase">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelGridConfigBtn">Cancel</button>
-                <button class="btn btn-primary" id="saveGridConfigBtn">Add Grid</button>
-            </div>
-        </div>
-    </div>
+    <!-- Scroll Hint -->
+    <div class="scroll-hint">Scroll →</div>
 
     <script>
-        // ============================================
-        // LLPA GRID TRANSPOSER - MAIN APPLICATION
-        // ============================================
+        // Generate random stars
+        const starsContainer = document.getElementById('stars');
+        const starCount = 400;
 
-        // Global State
-        const state = {
-            workbook: null,
-            fileName: '',
-            sheets: {},
-            selectedSheets: new Set(),
-            detectedGrids: [],
-            manualGrids: [],
-            outputData: {},
-            currentSheet: null,
-            currentGridForModal: null,
-            manualSelection: { start: null, end: null },
-            isSelecting: false
-        };
-
-        // Template column mapping (based on llpa_template_copy_paster.xlsx)
-        const TEMPLATE_COLUMNS = {
-            amount: { min: 0, max: 1 },
-            secondLien: { min: 2, max: 3 },
-            helocLine: { min: 4, max: 5 },
-            helocDraw: { min: 6, max: 7 },
-            combinedLoan: { min: 8, max: 9 },
-            dscr: { min: 10, max: 11 },
-            qDscr: { min: 12, max: 13 },
-            frontDti: { min: 14, max: 15 },
-            backDti: { min: 16, max: 17 },
-            fico: { min: 18, max: 19 },
-            hcltv: { min: 20, max: 21 },
-            cltv: { min: 22, max: 23 },
-            ltv: { min: 24, max: 25 },
-            ltl: { min: 26, max: 27 },
-            cashOut: { min: 28, max: 29 },
-            cashInHand: { min: 30, max: 31 },
-            monthsRes: { min: 32, max: 33 },
-            qMonthsRes: { min: 34, max: 35 },
-            resIncome: { min: 36, max: 37 },
-            qResIncome: { min: 38, max: 39 },
-            houseNum: { min: 40, max: 41 },
-            ppp: { min: 42, max: 43 },
-            llpaRate: 44,
-            llpaPrice: 45,
-            capPrice: 46
-        };
-
-        // Ineligible markers
-        const INELIGIBLE_MARKERS = ['-', 'na', 'NA', 'N/A', 'n/a', '', null, undefined];
-
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
-
-        function isIneligible(value) {
-            if (value === null || value === undefined) return true;
-            const strVal = String(value).trim().toLowerCase();
-            if (INELIGIBLE_MARKERS.includes(strVal)) return true;
-            if (strVal === '9' || strVal === '9.0' || strVal === '9.00') return true;
-            return false;
-        }
-
-        function normalizeValue(value) {
-            if (isIneligible(value)) return 'N/A';
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
             
-            let numVal = parseFloat(value);
-            if (isNaN(numVal)) return 'N/A';
-            
-            if (Math.abs(numVal) >= 10 && Number.isInteger(numVal)) {
-                numVal = numVal / 100;
+            const size = Math.random();
+            if (size > 0.97) {
+                star.style.width = '4px';
+                star.style.height = '4px';
+                star.style.boxShadow = '0 0 6px rgba(255,255,255,0.8)';
+            } else if (size > 0.9) {
+                star.style.width = '3px';
+                star.style.height = '3px';
+            } else if (size > 0.7) {
+                star.style.width = '2px';
+                star.style.height = '2px';
+            } else {
+                star.style.width = '1px';
+                star.style.height = '1px';
             }
             
-            return numVal;
+            star.style.animationDelay = Math.random() * 3 + 's';
+            star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            starsContainer.appendChild(star);
         }
 
-        function parseRange(rangeStr) {
-            if (!rangeStr || typeof rangeStr !== 'string') {
-                const num = parseFloat(rangeStr);
-                if (!isNaN(num)) return { min: num, max: num };
-                return { min: null, max: null };
+        // Generate sparkles in comet tail
+        const sparklesContainer = document.getElementById('comet-sparkles');
+        for (let i = 0; i < 15; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'comet-sparkle';
+            sparkle.style.left = (Math.random() * 200 + 20) + 'px';
+            sparkle.style.top = (Math.random() * 40 + 5) + 'px';
+            sparkle.style.width = (Math.random() * 3 + 1) + 'px';
+            sparkle.style.height = sparkle.style.width;
+            sparkle.style.animationDelay = Math.random() * 1 + 's';
+            sparkle.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+            sparklesContainer.appendChild(sparkle);
+        }
+
+        // Hide scroll hint after user scrolls
+        let scrolled = false;
+        document.querySelector('.solar-system').addEventListener('scroll', function() {
+            if (!scrolled) {
+                document.querySelector('.scroll-hint').style.opacity = '0';
+                scrolled = true;
             }
-            
-            const str = rangeStr.trim();
-            
-            const plusMatch = str.match(/^[≥>=]*\s*(\d+(?:\.\d+)?)\s*\+?$/);
-            if (plusMatch || str.includes('+') || str.startsWith('>=') || str.startsWith('≥')) {
-                const num = parseFloat(str.replace(/[≥>=+\s]/g, ''));
-                return { min: num, max: null };
-            }
-            
-            const lteMatch = str.match(/^[≤<=<]+\s*(\d+(?:\.\d+)?)\s*%?$/);
-            if (lteMatch) {
-                return { min: null, max: parseFloat(lteMatch[1]) };
-            }
-            
-            const dashMatch = str.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
-            if (dashMatch) {
-                return { min: parseFloat(dashMatch[1]) || null, max: parseFloat(dashMatch[2]) };
-            }
-            
-            const rangeMatch = str.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/);
-            if (rangeMatch) {
-                return { min: parseFloat(rangeMatch[1]), max: parseFloat(rangeMatch[2]) };
-            }
-            
-            const ficoMatch = str.match(/(\d{3})\s*[-–]\s*(\d{3})/);
-            if (ficoMatch) {
-                return { min: parseFloat(ficoMatch[1]), max: parseFloat(ficoMatch[2]) };
-            }
-            
-            const num = parseFloat(str.replace(/[%≤≥<>=]/g, ''));
-            if (!isNaN(num)) {
-                return { min: num, max: num };
-            }
-            
-            return { min: null, max: null };
-        }
-
-        function cleanSheetName(name) {
-            return name.replace(/[\\\/\?\*\[\]:]/g, '_').substring(0, 31);
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
-        function showCopyToast(message = '✓ Copied to clipboard!') {
-            const toast = document.getElementById('copyToast');
-            toast.textContent = message;
-            toast.classList.add('visible');
-            setTimeout(() => toast.classList.remove('visible'), 2500);
-        }
-
-        // ============================================
-        // FILE HANDLING
-        // ============================================
-
-        function handleFileUpload(file) {
-            if (!file) return;
-            
-            state.fileName = file.name;
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileMeta').textContent = `${(file.size / 1024).toFixed(1)} KB`;
-            document.getElementById('fileInfo').classList.add('visible');
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    state.workbook = XLSX.read(data, { type: 'array' });
-                    
-                    state.sheets = {};
-                    state.workbook.SheetNames.forEach(name => {
-                        const sheet = state.workbook.Sheets[name];
-                        state.sheets[name] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
-                    });
-                    
-                    displaySheets();
-                    document.getElementById('sheetsCard').style.display = 'block';
-                    document.getElementById('gridsCard').style.display = 'block';
-                    document.getElementById('actionsCard').style.display = 'block';
-                    
-                } catch (err) {
-                    alert('Error reading file: ' + err.message);
-                    console.error(err);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function displaySheets() {
-            const container = document.getElementById('sheetsList');
-            container.innerHTML = '';
-            
-            state.workbook.SheetNames.forEach((name, idx) => {
-                const item = document.createElement('div');
-                item.className = 'sheet-item';
-                item.innerHTML = `
-                    <input type="checkbox" class="sheet-checkbox" data-sheet="${name}" checked>
-                    <span class="sheet-name">${name}</span>
-                `;
-                
-                const checkbox = item.querySelector('.sheet-checkbox');
-                checkbox.addEventListener('change', () => {
-                    if (checkbox.checked) {
-                        state.selectedSheets.add(name);
-                    } else {
-                        state.selectedSheets.delete(name);
-                    }
-                    detectAllGrids();
-                });
-                
-                item.addEventListener('click', (e) => {
-                    if (e.target !== checkbox) {
-                        displaySheetPreview(name);
-                    }
-                });
-                
-                state.selectedSheets.add(name);
-                container.appendChild(item);
-            });
-            
-            document.getElementById('sheetsSubtitle').textContent = `${state.workbook.SheetNames.length} tabs found`;
-            
-            if (state.workbook.SheetNames.length > 0) {
-                displaySheetPreview(state.workbook.SheetNames[0]);
-                detectAllGrids();
-            }
-        }
-
-        function displaySheetPreview(sheetName) {
-            state.currentSheet = sheetName;
-            const data = state.sheets[sheetName];
-            if (!data || data.length === 0) {
-                document.getElementById('sourceView').innerHTML = '<div class="empty-state"><div class="empty-title">Empty Sheet</div></div>';
-                return;
-            }
-            
-            document.getElementById('previewTitle').textContent = `Sheet: ${sheetName}`;
-            
-            let html = '<table class="data-table">';
-            
-            const maxRows = Math.min(data.length, 100);
-            const maxCols = Math.min(Math.max(...data.map(r => r ? r.length : 0)), 30);
-            
-            for (let i = 0; i < maxRows; i++) {
-                html += '<tr>';
-                for (let j = 0; j < maxCols; j++) {
-                    const val = data[i] ? data[i][j] : null;
-                    const displayVal = val !== null && val !== undefined ? String(val) : '';
-                    const cellClass = i === 0 ? 'cell-header' : '';
-                    html += `<td class="${cellClass}">${escapeHtml(displayVal)}</td>`;
-                }
-                html += '</tr>';
-            }
-            
-            html += '</table>';
-            document.getElementById('sourceView').innerHTML = html;
-        }
-
-        // ============================================
-        // GRID DETECTION
-        // ============================================
-
-        function detectAllGrids() {
-            state.detectedGrids = [];
-            
-            state.selectedSheets.forEach(sheetName => {
-                const data = state.sheets[sheetName];
-                if (!data || data.length < 3) return;
-                
-                const grids = detectGridsInSheet(sheetName, data);
-                state.detectedGrids.push(...grids);
-            });
-            
-            displayDetectedGrids();
-        }
-
-        function detectGridsInSheet(sheetName, data) {
-            const grids = [];
-            const rows = data.length;
-            const cols = Math.max(...data.map(r => r ? r.length : 0));
-            
-            const usedCells = new Set();
-            
-            for (let i = 0; i < rows - 2; i++) {
-                for (let j = 0; j < cols - 2; j++) {
-                    if (usedCells.has(`${i},${j}`)) continue;
-                    
-                    const potentialGrid = tryDetectGrid(data, i, j, sheetName);
-                    if (potentialGrid) {
-                        grids.push(potentialGrid);
-                        
-                        for (let ri = potentialGrid.startRow; ri <= potentialGrid.endRow; ri++) {
-                            for (let ci = potentialGrid.startCol; ci <= potentialGrid.endCol; ci++) {
-                                usedCells.add(`${ri},${ci}`);
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return grids;
-        }
-
-        function tryDetectGrid(data, startRow, startCol, sheetName) {
-            const headerRow = data[startRow];
-            if (!headerRow) return null;
-            
-            const cltvHeaders = [];
-            let headerStartCol = -1;
-            
-            for (let j = startCol; j < headerRow.length; j++) {
-                const cell = headerRow[j];
-                if (cell === null || cell === undefined) continue;
-                
-                const cellStr = String(cell).trim();
-                
-                if (isCLTVHeader(cellStr)) {
-                    if (headerStartCol === -1) headerStartCol = j;
-                    cltvHeaders.push({ col: j, value: cellStr });
-                } else if (cltvHeaders.length > 0) {
-                    break;
-                }
-            }
-            
-            if (cltvHeaders.length < 3) return null;
-            
-            const rowLabels = [];
-            let dataStartRow = startRow + 1;
-            let labelCol = headerStartCol - 1;
-            
-            if (labelCol < 0) labelCol = 0;
-            
-            if (data[dataStartRow]) {
-                const firstDataCell = data[dataStartRow][headerStartCol];
-                if (firstDataCell && String(firstDataCell).toLowerCase().includes('credit') || 
-                    String(firstDataCell).toLowerCase().includes('fico')) {
-                    labelCol = headerStartCol;
-                    headerStartCol++;
-                    dataStartRow++;
-                }
-            }
-            
-            for (let i = dataStartRow; i < data.length; i++) {
-                const row = data[i];
-                if (!row) break;
-                
-                const label = row[labelCol];
-                if (!label) {
-                    const hasData = cltvHeaders.some(h => {
-                        const val = row[h.col];
-                        return val !== null && val !== undefined && String(val).trim() !== '';
-                    });
-                    if (!hasData) break;
-                    continue;
-                }
-                
-                const labelStr = String(label).trim();
-                
-                if (isSkippableLabel(labelStr)) {
-                    if (rowLabels.length > 0) break;
-                    continue;
-                }
-                
-                const dataValues = cltvHeaders.map(h => row[h.col]).filter(v => v !== null && v !== undefined);
-                if (dataValues.length < 2) {
-                    if (rowLabels.length > 0) break;
-                    continue;
-                }
-                
-                rowLabels.push({ row: i, label: labelStr });
-            }
-            
-            if (rowLabels.length < 2) return null;
-            
-            const gridType = determineGridType(rowLabels, sheetName, data, startRow);
-            const trigger = findGridTrigger(data, startRow, startCol);
-            
-            return {
-                id: `${sheetName}-${startRow}-${startCol}`,
-                sheetName: sheetName,
-                type: gridType.type,
-                typeBadge: gridType.badge,
-                rowDimension: gridType.rowDim,
-                colDimension: 'cltv',
-                name: `${cleanSheetName(sheetName)}-${gridType.name}`,
-                trigger: trigger,
-                startRow: startRow,
-                startCol: labelCol,
-                endRow: rowLabels[rowLabels.length - 1].row,
-                endCol: cltvHeaders[cltvHeaders.length - 1].col,
-                headerRow: startRow,
-                dataStartRow: rowLabels[0].row,
-                labelCol: labelCol,
-                cltvHeaders: cltvHeaders,
-                rowLabels: rowLabels,
-                selected: true
-            };
-        }
-
-        function isCLTVHeader(str) {
-            if (!str) return false;
-            const s = String(str).trim().toLowerCase();
-            
-            const patterns = [
-                /^[≤<=]\s*\d+/,
-                /^\d+\.?\d*\s*[-–]\s*\d+/,
-                /^\d+\.?\d*\s*%?$/,
-                /^0\s*[-–]/,
-                /≤\s*50/,
-                /^\d+\.\d+-\d+/,
-            ];
-            
-            return patterns.some(p => p.test(s));
-        }
-
-        function isSkippableLabel(label) {
-            const skip = [
-                'credit score', 'fico', 'cltv', 'ltv', 'adjustment', 'llpa', 
-                'price adjustment', 'rate adjustment', 'other', 'notes',
-                'documentation', 'product', 'loan amount', 'max price', 'min price',
-                'lock', 'term', 'program', 'base', 'pricing', 'coupon'
-            ];
-            const lower = label.toLowerCase();
-            return skip.some(s => lower.includes(s)) && !isFicoRange(label);
-        }
-
-        function isFicoRange(str) {
-            const patterns = [
-                /^\d{3}\s*[-–]\s*\d{3}/,
-                /^\d{3}\+/,
-                /^[≥>=]+\s*\d{3}/,
-                /^[<≤]+\s*\d{3}/,
-            ];
-            return patterns.some(p => p.test(String(str).trim()));
-        }
-
-        function determineGridType(rowLabels, sheetName, data, headerRow) {
-            const labels = rowLabels.map(r => r.label.toLowerCase());
-            
-            if (rowLabels.some(r => isFicoRange(r.label))) {
-                return { type: 'fico-cltv', badge: 'fico-cltv', name: 'FICO_CLTV', rowDim: 'fico' };
-            }
-            
-            if (rowLabels.every(r => /^[A-Z]{2}$/.test(r.label.trim()))) {
-                return { type: 'state', badge: 'state', name: 'State', rowDim: 'state' };
-            }
-            
-            if (labels.some(l => l.includes('$') || l.includes('mm') || l.includes('000'))) {
-                return { type: 'cltv-only', badge: 'cltv-only', name: 'LoanAmt_CLTV', rowDim: 'amount' };
-            }
-            
-            if (labels.some(l => l.includes('condo') || l.includes('unit') || l.includes('sfr') || l.includes('pud'))) {
-                return { type: 'cltv-only', badge: 'cltv-only', name: 'PropType_CLTV', rowDim: 'other' };
-            }
-            
-            if (labels.some(l => l.includes('dti'))) {
-                return { type: 'cltv-only', badge: 'cltv-only', name: 'DTI_CLTV', rowDim: 'dti' };
-            }
-            
-            if (labels.some(l => l.includes('prepay') || l.includes('ppp') || l.includes('year'))) {
-                return { type: 'ppp', badge: 'ppp', name: 'PPP', rowDim: 'ppp' };
-            }
-            
-            return { type: 'cltv-only', badge: 'cltv-only', name: 'Adjustment_CLTV', rowDim: 'other' };
-        }
-
-        function findGridTrigger(data, headerRow, startCol) {
-            const triggers = [];
-            
-            for (let i = Math.max(0, headerRow - 5); i < headerRow; i++) {
-                const row = data[i];
-                if (!row) continue;
-                
-                for (let j = 0; j < row.length; j++) {
-                    const cell = row[j];
-                    if (!cell) continue;
-                    
-                    const cellStr = String(cell).trim().toLowerCase();
-                    
-                    if (cellStr.includes('primary') && !cellStr.includes('nco')) triggers.push('Primary');
-                    else if (cellStr.includes('second home')) triggers.push('Second Home');
-                    else if (cellStr.includes('noo') || cellStr.includes('investor') || cellStr.includes('investment')) triggers.push('Investment');
-                    
-                    if (cellStr.includes('purchase') && !cellStr.includes('noo')) triggers.push('Purchase');
-                    else if (cellStr.includes('nco') || cellStr.includes('rate/term') || cellStr.includes('r/t')) triggers.push('NCO Refi');
-                    else if (cellStr.includes('cash') && cellStr.includes('out') || cellStr.includes('co refi')) triggers.push('CO Refi');
-                    
-                    if (cellStr.includes('full doc')) triggers.push('FullDoc');
-                    else if (cellStr.includes('bank statement')) triggers.push('BankStmt');
-                    else if (cellStr.includes('1099')) triggers.push('1099');
-                    else if (cellStr.includes('p&l') || cellStr.includes('profit')) triggers.push('P&L');
-                    else if (cellStr.includes('dscr')) triggers.push('DSCR');
-                    else if (cellStr.includes('asset')) triggers.push('Asset');
-                    
-                    if (cellStr.includes('fixed')) triggers.push('Fixed');
-                    else if (cellStr.includes('arm')) triggers.push('ARM');
-                }
-            }
-            
-            return [...new Set(triggers)].slice(0, 3).join('_') || null;
-        }
-
-        function displayDetectedGrids() {
-            const container = document.getElementById('gridsList');
-            container.innerHTML = '';
-            
-            if (state.detectedGrids.length === 0) {
-                container.innerHTML = '<div style="padding: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">No LLPA grids auto-detected. Try manual selection.</div>';
-                document.getElementById('gridsSubtitle').textContent = '0 grids found';
-                document.getElementById('processBtn').disabled = true;
-                return;
-            }
-            
-            state.detectedGrids.forEach((grid, idx) => {
-                const btn = document.createElement('button');
-                btn.className = `grid-btn ${grid.selected ? 'selected' : ''}`;
-                btn.textContent = grid.name;
-                btn.title = `${grid.type} | ${grid.rowLabels.length}×${grid.cltvHeaders.length} | ${grid.trigger || 'No trigger'}`;
-                
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openGridModal(grid);
-                });
-                
-                container.appendChild(btn);
-            });
-            
-            document.getElementById('gridsSubtitle').textContent = `${state.detectedGrids.length} grids found`;
-            updateProcessButton();
-        }
-
-        function updateProcessButton() {
-            const selectedCount = state.detectedGrids.filter(g => g.selected).length + state.manualGrids.length;
-            document.getElementById('processBtn').disabled = selectedCount === 0;
-        }
-
-        // ============================================
-        // GRID MODAL - NEW!
-        // ============================================
-
-        function openGridModal(grid) {
-            state.currentGridForModal = grid;
-            
-            document.getElementById('gridModalName').textContent = grid.name;
-            document.getElementById('gridModalBadge').textContent = grid.type.toUpperCase();
-            document.getElementById('gridModalDimensions').textContent = `${grid.rowLabels.length} rows × ${grid.cltvHeaders.length} columns`;
-            document.getElementById('gridModalSheet').textContent = `Sheet: ${grid.sheetName}`;
-            
-            const data = state.sheets[grid.sheetName];
-            const table = document.getElementById('gridModalTable');
-            
-            // Build table HTML
-            let html = '<thead><tr><th></th>';
-            grid.cltvHeaders.forEach(h => {
-                html += `<th>${escapeHtml(h.value)}</th>`;
-            });
-            html += '</tr></thead><tbody>';
-            
-            grid.rowLabels.forEach(r => {
-                html += `<tr><td>${escapeHtml(r.label)}</td>`;
-                grid.cltvHeaders.forEach(h => {
-                    const val = data[r.row] ? data[r.row][h.col] : null;
-                    const displayVal = val !== null && val !== undefined ? String(val) : '';
-                    let cellClass = '';
-                    if (isIneligible(val)) {
-                        cellClass = 'cell-na';
-                    } else {
-                        const numVal = parseFloat(val);
-                        if (!isNaN(numVal)) {
-                            cellClass = numVal > 0 ? 'cell-positive' : numVal < 0 ? 'cell-negative' : '';
-                        }
-                    }
-                    html += `<td class="${cellClass}">${escapeHtml(displayVal)}</td>`;
-                });
-                html += '</tr>';
-            });
-            
-            html += '</tbody>';
-            table.innerHTML = html;
-            
-            document.getElementById('gridModalOverlay').classList.add('visible');
-        }
-
-        function closeGridModal() {
-            document.getElementById('gridModalOverlay').classList.remove('visible');
-            state.currentGridForModal = null;
-        }
-
-        function copyGridToClipboard() {
-            if (!state.currentGridForModal) return;
-            
-            const grid = state.currentGridForModal;
-            const data = state.sheets[grid.sheetName];
-            
-            // Build TSV (tab-separated values) for the raw grid
-            let tsv = '\t' + grid.cltvHeaders.map(h => h.value).join('\t') + '\n';
-            
-            grid.rowLabels.forEach(r => {
-                let row = r.label;
-                grid.cltvHeaders.forEach(h => {
-                    const val = data[r.row] ? data[r.row][h.col] : '';
-                    row += '\t' + (val !== null && val !== undefined ? val : '');
-                });
-                tsv += row + '\n';
-            });
-            
-            navigator.clipboard.writeText(tsv).then(() => {
-                showCopyToast('✓ Grid copied to clipboard!');
-            }).catch(err => {
-                console.error('Copy failed:', err);
-                alert('Copy failed. Please try again.');
-            });
-        }
-
-        function copyTransposedToClipboard() {
-            if (!state.currentGridForModal) return;
-            
-            const grid = state.currentGridForModal;
-            const data = state.sheets[grid.sheetName];
-            
-            // Create transposed LoanNEX format
-            const rows = [];
-            
-            // Header row
-            const headerRow = [
-                'Amount', '', 'Second Lien Loan Amount', '', 'HELOC Line Amount', '',
-                'HELOC Draw Amount', '', 'Combined Loan Amount', '', 'DSCR', '',
-                'Q. DSCR', '', 'Front-End DTI', '', 'Back-End DTI', '',
-                'FICO', '', 'HCLTV', '', 'CLTV', '', 'LTV', '', 'LTL', '',
-                'Cash Out', '', 'Cash-in-Hand', '', 'Months Res.', '',
-                'Q Months Res.', '', 'Res. Income', '', 'Q Res. Income', '',
-                'House / Fin. #', '', 'PPP', '', 'LLPA', '', 'Cap'
-            ];
-            rows.push(headerRow.join('\t'));
-            
-            // Min/Max row
-            const minMaxRow = [];
-            for (let i = 0; i < 44; i += 2) {
-                minMaxRow.push('Min', 'Max');
-            }
-            minMaxRow.push('Rate', 'Price', 'Price');
-            rows.push(minMaxRow.join('\t'));
-            
-            // Data rows
-            grid.rowLabels.forEach(rowLabel => {
-                const rowRange = parseRange(rowLabel.label);
-                
-                grid.cltvHeaders.forEach(colHeader => {
-                    const colRange = parseRange(colHeader.value);
-                    const cellValue = data[rowLabel.row] ? data[rowLabel.row][colHeader.col] : null;
-                    const normalizedValue = normalizeValue(cellValue);
-                    
-                    if (normalizedValue === 'N/A') return;
-                    
-                    const outputRow = new Array(47).fill('');
-                    
-                    // Set FICO (columns 18-19) or other row dimension
-                    if (grid.rowDimension === 'fico') {
-                        outputRow[18] = rowRange.min !== null ? rowRange.min : '';
-                        outputRow[19] = rowRange.max !== null ? rowRange.max : '';
-                    } else if (grid.rowDimension === 'amount') {
-                        outputRow[0] = rowRange.min !== null ? rowRange.min : '';
-                        outputRow[1] = rowRange.max !== null ? rowRange.max : '';
-                    } else if (grid.rowDimension === 'dti') {
-                        outputRow[16] = rowRange.min !== null ? rowRange.min : '';
-                        outputRow[17] = rowRange.max !== null ? rowRange.max : '';
-                    }
-                    
-                    // Set CLTV (columns 22-23) or other column dimension
-                    if (grid.colDimension === 'cltv') {
-                        outputRow[22] = colRange.min !== null ? colRange.min : '';
-                        outputRow[23] = colRange.max !== null ? colRange.max : '';
-                    } else if (grid.colDimension === 'ltv') {
-                        outputRow[24] = colRange.min !== null ? colRange.min : '';
-                        outputRow[25] = colRange.max !== null ? colRange.max : '';
-                    }
-                    
-                    // Set value (Price column 45)
-                    outputRow[45] = normalizedValue;
-                    
-                    rows.push(outputRow.join('\t'));
-                });
-            });
-            
-            navigator.clipboard.writeText(rows.join('\n')).then(() => {
-                showCopyToast('✓ LoanNEX format copied!');
-            }).catch(err => {
-                console.error('Copy failed:', err);
-                alert('Copy failed. Please try again.');
-            });
-        }
-
-        // ============================================
-        // GRID PROCESSING & OUTPUT GENERATION
-        // ============================================
-
-        function processGrids() {
-            const selectedGrids = [
-                ...state.detectedGrids.filter(g => g.selected),
-                ...state.manualGrids
-            ];
-            
-            if (selectedGrids.length === 0) {
-                alert('No grids selected for processing.');
-                return;
-            }
-            
-            document.getElementById('progressSection').style.display = 'block';
-            document.getElementById('progressTitle').textContent = 'Processing grids...';
-            document.getElementById('progressCount').textContent = `0 / ${selectedGrids.length}`;
-            document.getElementById('progressBar').style.width = '0%';
-            
-            state.outputData = {};
-            
-            selectedGrids.forEach((grid, idx) => {
-                try {
-                    const outputRows = transposeGrid(grid);
-                    const tabName = generateTabName(grid);
-                    state.outputData[tabName] = outputRows;
-                    
-                    const progress = ((idx + 1) / selectedGrids.length) * 100;
-                    document.getElementById('progressBar').style.width = `${progress}%`;
-                    document.getElementById('progressCount').textContent = `${idx + 1} / ${selectedGrids.length}`;
-                } catch (err) {
-                    console.error(`Error processing grid ${grid.name}:`, err);
-                }
-            });
-            
-            document.getElementById('progressTitle').textContent = 'Processing complete!';
-            document.getElementById('downloadBtn').style.display = 'block';
-            
-            displayOutputPreview();
-        }
-
-        function transposeGrid(grid) {
-            const data = state.sheets[grid.sheetName];
-            const rows = [];
-            
-            if (grid.type === 'ppp') {
-                return [['OUT OF SCOPE - PPP grid handling not implemented']];
-            }
-            
-            const headerRow = createHeaderRow();
-            rows.push(headerRow);
-            
-            const minMaxRow = createMinMaxRow();
-            rows.push(minMaxRow);
-            
-            grid.rowLabels.forEach(rowLabel => {
-                const rowRange = parseRange(rowLabel.label);
-                
-                grid.cltvHeaders.forEach(colHeader => {
-                    const colRange = parseRange(colHeader.value);
-                    const cellValue = data[rowLabel.row] ? data[rowLabel.row][colHeader.col] : null;
-                    const normalizedValue = normalizeValue(cellValue);
-                    
-                    if (normalizedValue === 'N/A') return;
-                    
-                    const outputRow = new Array(47).fill(null);
-                    
-                    setRowDimension(outputRow, grid.rowDimension, rowRange);
-                    setColDimension(outputRow, grid.colDimension, colRange);
-                    
-                    if (grid.valueType === 'rate') {
-                        outputRow[TEMPLATE_COLUMNS.llpaRate] = normalizedValue;
-                    } else if (grid.valueType === 'cap') {
-                        outputRow[TEMPLATE_COLUMNS.capPrice] = normalizedValue;
-                    } else {
-                        outputRow[TEMPLATE_COLUMNS.llpaPrice] = normalizedValue;
-                    }
-                    
-                    rows.push(outputRow);
-                });
-            });
-            
-            return rows;
-        }
-
-        function createHeaderRow() {
-            return [
-                'Amount', null, 'Second Lien Loan Amount', null, 'HELOC Line Amount', null,
-                'HELOC Draw Amount', null, 'Combined Loan Amount', null, 'DCSR', null,
-                'Q. DSCR', null, 'Front-End DTI', null, 'Back-End DTI', null,
-                'FICO', null, 'HCLTV', null, 'CLTV', null, 'LTV', null, 'LTL', null,
-                'Cash Out', null, 'Cash-in-Hand', null, 'Months Res.', null,
-                'Q Months Res.', null, 'Res. Income', null, 'Q Res. Income', null,
-                'House / Fin. #', null, 'PPP', null, 'LLPA', null, 'Cap'
-            ];
-        }
-
-        function createMinMaxRow() {
-            const row = [];
-            for (let i = 0; i < 44; i += 2) {
-                row.push('Min', 'Max');
-            }
-            row.push('Rate', 'Price', 'Price');
-            return row;
-        }
-
-        function setRowDimension(row, dimension, range) {
-            switch (dimension) {
-                case 'fico':
-                    row[TEMPLATE_COLUMNS.fico.min] = range.min;
-                    row[TEMPLATE_COLUMNS.fico.max] = range.max;
-                    break;
-                case 'amount':
-                    row[TEMPLATE_COLUMNS.amount.min] = range.min;
-                    row[TEMPLATE_COLUMNS.amount.max] = range.max;
-                    break;
-                case 'dti':
-                    row[TEMPLATE_COLUMNS.backDti.min] = range.min;
-                    row[TEMPLATE_COLUMNS.backDti.max] = range.max;
-                    break;
-                case 'ltv':
-                    row[TEMPLATE_COLUMNS.ltv.min] = range.min;
-                    row[TEMPLATE_COLUMNS.ltv.max] = range.max;
-                    break;
-            }
-        }
-
-        function setColDimension(row, dimension, range) {
-            switch (dimension) {
-                case 'cltv':
-                    row[TEMPLATE_COLUMNS.cltv.min] = range.min;
-                    row[TEMPLATE_COLUMNS.cltv.max] = range.max;
-                    break;
-                case 'ltv':
-                    row[TEMPLATE_COLUMNS.ltv.min] = range.min;
-                    row[TEMPLATE_COLUMNS.ltv.max] = range.max;
-                    break;
-                case 'amount':
-                    row[TEMPLATE_COLUMNS.amount.min] = range.min;
-                    row[TEMPLATE_COLUMNS.amount.max] = range.max;
-                    break;
-                default:
-                    row[TEMPLATE_COLUMNS.cltv.min] = range.min;
-                    row[TEMPLATE_COLUMNS.cltv.max] = range.max;
-            }
-        }
-
-        function generateTabName(grid) {
-            let name = grid.name;
-            if (grid.trigger) {
-                name = `${cleanSheetName(grid.sheetName)}-${grid.trigger}-${grid.type === 'fico-cltv' ? 'FICO_CLTV' : grid.rowDimension + '_CLTV'}`;
-            }
-            return cleanSheetName(name);
-        }
-
-        // ============================================
-        // OUTPUT PREVIEW & DOWNLOAD
-        // ============================================
-
-        function displayOutputPreview() {
-            const tabContainer = document.getElementById('outputTabs');
-            const tableContainer = document.getElementById('outputTableContainer');
-            
-            tabContainer.innerHTML = '';
-            
-            const tabNames = Object.keys(state.outputData);
-            if (tabNames.length === 0) {
-                tableContainer.innerHTML = '<div class="empty-state"><div class="empty-title">No Output Generated</div></div>';
-                return;
-            }
-            
-            tabNames.forEach((tabName, idx) => {
-                const tab = document.createElement('button');
-                tab.className = `output-tab ${idx === 0 ? 'active' : ''}`;
-                tab.textContent = tabName;
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    renderOutputTable(tabName);
-                });
-                tabContainer.appendChild(tab);
-            });
-            
-            renderOutputTable(tabNames[0]);
-            
-            document.querySelector('.preview-tab[data-view="output"]').click();
-        }
-
-        function renderOutputTable(tabName) {
-            const data = state.outputData[tabName];
-            const container = document.getElementById('outputTableContainer');
-            
-            if (!data || data.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-title">No data in this tab</div></div>';
-                return;
-            }
-            
-            let html = '<table class="data-table">';
-            
-            data.forEach((row, rowIdx) => {
-                html += '<tr>';
-                row.forEach((cell, colIdx) => {
-                    const tag = rowIdx < 2 ? 'th' : 'td';
-                    let cellClass = '';
-                    let displayVal = cell !== null && cell !== undefined ? cell : '';
-                    
-                    if (displayVal === 'N/A') {
-                        cellClass = 'cell-na';
-                    } else if (typeof displayVal === 'number') {
-                        cellClass = displayVal > 0 ? 'cell-positive' : displayVal < 0 ? 'cell-negative' : '';
-                        displayVal = displayVal.toFixed ? displayVal.toFixed(3) : displayVal;
-                    }
-                    
-                    html += `<${tag} class="${cellClass}">${escapeHtml(String(displayVal))}</${tag}>`;
-                });
-                html += '</tr>';
-            });
-            
-            html += '</table>';
-            container.innerHTML = html;
-        }
-
-        function downloadOutput() {
-            if (Object.keys(state.outputData).length === 0) {
-                alert('No data to download. Process grids first.');
-                return;
-            }
-            
-            const wb = XLSX.utils.book_new();
-            
-            Object.entries(state.outputData).forEach(([tabName, data]) => {
-                const ws = XLSX.utils.aoa_to_sheet(data);
-                XLSX.utils.book_append_sheet(wb, ws, tabName);
-            });
-            
-            const baseName = state.fileName.replace(/\.[^/.]+$/, '');
-            const outputName = `${baseName}_LoanNEX_LLPAs.xlsx`;
-            
-            XLSX.writeFile(wb, outputName);
-        }
-
-        // ============================================
-        // MANUAL SELECTION MODE
-        // ============================================
-
-        function openManualSelection() {
-            if (!state.currentSheet) {
-                alert('Please select a sheet first.');
-                return;
-            }
-            
-            document.getElementById('manualOverlay').classList.add('visible');
-            renderManualTable();
-        }
-
-        function closeManualSelection() {
-            document.getElementById('manualOverlay').classList.remove('visible');
-            state.manualSelection = { start: null, end: null };
-        }
-
-        function renderManualTable() {
-            const data = state.sheets[state.currentSheet];
-            const container = document.getElementById('manualTableWrapper');
-            
-            let html = '<table class="data-table manual-table">';
-            
-            const maxRows = Math.min(data.length, 150);
-            const maxCols = Math.min(Math.max(...data.map(r => r ? r.length : 0)), 40);
-            
-            for (let i = 0; i < maxRows; i++) {
-                html += '<tr>';
-                for (let j = 0; j < maxCols; j++) {
-                    const val = data[i] ? data[i][j] : null;
-                    const displayVal = val !== null && val !== undefined ? String(val) : '';
-                    html += `<td data-row="${i}" data-col="${j}">${escapeHtml(displayVal)}</td>`;
-                }
-                html += '</tr>';
-            }
-            
-            html += '</table>';
-            container.innerHTML = html;
-            
-            const table = container.querySelector('.manual-table');
-            let isSelecting = false;
-            
-            table.addEventListener('mousedown', (e) => {
-                if (e.target.tagName === 'TD') {
-                    isSelecting = true;
-                    state.manualSelection.start = {
-                        row: parseInt(e.target.dataset.row),
-                        col: parseInt(e.target.dataset.col)
-                    };
-                    state.manualSelection.end = { ...state.manualSelection.start };
-                    updateSelectionHighlight(table);
-                }
-            });
-            
-            table.addEventListener('mouseover', (e) => {
-                if (isSelecting && e.target.tagName === 'TD') {
-                    state.manualSelection.end = {
-                        row: parseInt(e.target.dataset.row),
-                        col: parseInt(e.target.dataset.col)
-                    };
-                    updateSelectionHighlight(table);
-                }
-            });
-            
-            document.addEventListener('mouseup', () => {
-                isSelecting = false;
-            });
-        }
-
-        function updateSelectionHighlight(table) {
-            table.querySelectorAll('td.selecting, td.selected').forEach(td => {
-                td.classList.remove('selecting', 'selected');
-            });
-            
-            if (!state.manualSelection.start || !state.manualSelection.end) return;
-            
-            const minRow = Math.min(state.manualSelection.start.row, state.manualSelection.end.row);
-            const maxRow = Math.max(state.manualSelection.start.row, state.manualSelection.end.row);
-            const minCol = Math.min(state.manualSelection.start.col, state.manualSelection.end.col);
-            const maxCol = Math.max(state.manualSelection.start.col, state.manualSelection.end.col);
-            
-            table.querySelectorAll('td').forEach(td => {
-                const r = parseInt(td.dataset.row);
-                const c = parseInt(td.dataset.col);
-                if (r >= minRow && r <= maxRow && c >= minCol && c <= maxCol) {
-                    td.classList.add('selecting');
-                }
-            });
-        }
-
-        function clearManualSelection() {
-            state.manualSelection = { start: null, end: null };
-            const table = document.querySelector('.manual-table');
-            if (table) {
-                table.querySelectorAll('td.selecting, td.selected').forEach(td => {
-                    td.classList.remove('selecting', 'selected');
-                });
-            }
-        }
-
-        function confirmManualSelection() {
-            if (!state.manualSelection.start || !state.manualSelection.end) {
-                alert('Please select a region first.');
-                return;
-            }
-            
-            document.getElementById('gridConfigModal').classList.add('visible');
-            
-            const minRow = Math.min(state.manualSelection.start.row, state.manualSelection.end.row);
-            const minCol = Math.min(state.manualSelection.start.col, state.manualSelection.end.col);
-            document.getElementById('gridNameInput').value = `${state.currentSheet}-Manual-R${minRow}C${minCol}`;
-        }
-
-        function saveManualGrid() {
-            const name = document.getElementById('gridNameInput').value || 'Manual_Grid';
-            const rowDim = document.getElementById('rowDimSelect').value;
-            const colDim = document.getElementById('colDimSelect').value;
-            const valueType = document.getElementById('valueTypeSelect').value;
-            const trigger = document.getElementById('gridTriggerInput').value;
-            
-            const minRow = Math.min(state.manualSelection.start.row, state.manualSelection.end.row);
-            const maxRow = Math.max(state.manualSelection.start.row, state.manualSelection.end.row);
-            const minCol = Math.min(state.manualSelection.start.col, state.manualSelection.end.col);
-            const maxCol = Math.max(state.manualSelection.start.col, state.manualSelection.end.col);
-            
-            const data = state.sheets[state.currentSheet];
-            
-            const rowLabels = [];
-            const cltvHeaders = [];
-            
-            for (let j = minCol + 1; j <= maxCol; j++) {
-                const val = data[minRow] ? data[minRow][j] : null;
-                if (val !== null && val !== undefined) {
-                    cltvHeaders.push({ col: j, value: String(val) });
-                }
-            }
-            
-            for (let i = minRow + 1; i <= maxRow; i++) {
-                const val = data[i] ? data[i][minCol] : null;
-                if (val !== null && val !== undefined) {
-                    rowLabels.push({ row: i, label: String(val) });
-                }
-            }
-            
-            const grid = {
-                id: `manual-${Date.now()}`,
-                sheetName: state.currentSheet,
-                type: 'manual',
-                typeBadge: 'cltv-only',
-                rowDimension: rowDim,
-                colDimension: colDim,
-                valueType: valueType,
-                name: cleanSheetName(name),
-                trigger: trigger || null,
-                startRow: minRow,
-                startCol: minCol,
-                endRow: maxRow,
-                endCol: maxCol,
-                headerRow: minRow,
-                dataStartRow: minRow + 1,
-                labelCol: minCol,
-                cltvHeaders: cltvHeaders,
-                rowLabels: rowLabels,
-                selected: true
-            };
-            
-            state.manualGrids.push(grid);
-            
-            document.getElementById('gridConfigModal').classList.remove('visible');
-            closeManualSelection();
-            
-            displayDetectedGrids();
-            
-            const container = document.getElementById('gridsList');
-            const btn = document.createElement('button');
-            btn.className = 'grid-btn selected';
-            btn.textContent = grid.name;
-            btn.title = `Manual | ${rowLabels.length}×${cltvHeaders.length}`;
-            
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openGridModal(grid);
-            });
-            
-            container.appendChild(btn);
-            
-            updateProcessButton();
-        }
-
-        // ============================================
-        // EVENT LISTENERS
-        // ============================================
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // File upload
-            const uploadZone = document.getElementById('uploadZone');
-            const fileInput = document.getElementById('fileInput');
-            
-            uploadZone.addEventListener('click', () => fileInput.click());
-            
-            uploadZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadZone.classList.add('drag-over');
-            });
-            
-            uploadZone.addEventListener('dragleave', () => {
-                uploadZone.classList.remove('drag-over');
-            });
-            
-            uploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadZone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                handleFileUpload(file);
-            });
-            
-            fileInput.addEventListener('change', (e) => {
-                handleFileUpload(e.target.files[0]);
-            });
-            
-            // Preview tabs
-            document.querySelectorAll('.preview-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    const view = tab.dataset.view;
-                    document.getElementById('sourceView').style.display = view === 'source' ? 'block' : 'none';
-                    document.getElementById('outputView').style.display = view === 'output' ? 'block' : 'none';
-                });
-            });
-            
-            // Process button
-            document.getElementById('processBtn').addEventListener('click', processGrids);
-            
-            // Download button
-            document.getElementById('downloadBtn').addEventListener('click', downloadOutput);
-            
-            // Manual selection
-            document.getElementById('manualSelectBtn').addEventListener('click', openManualSelection);
-            document.getElementById('closeManualBtn').addEventListener('click', closeManualSelection);
-            document.getElementById('clearSelectionBtn').addEventListener('click', clearManualSelection);
-            document.getElementById('confirmSelectionBtn').addEventListener('click', confirmManualSelection);
-            
-            // Grid config modal
-            document.getElementById('cancelGridConfigBtn').addEventListener('click', () => {
-                document.getElementById('gridConfigModal').classList.remove('visible');
-            });
-            document.getElementById('saveGridConfigBtn').addEventListener('click', saveManualGrid);
-            
-            // Grid preview modal - NEW!
-            document.getElementById('closeGridModalBtn').addEventListener('click', closeGridModal);
-            document.getElementById('copyGridBtn').addEventListener('click', copyGridToClipboard);
-            document.getElementById('copyTransposedBtn').addEventListener('click', copyTransposedToClipboard);
-            
-            // Close modal on overlay click
-            document.getElementById('gridModalOverlay').addEventListener('click', (e) => {
-                if (e.target === document.getElementById('gridModalOverlay')) {
-                    closeGridModal();
-                }
-            });
-            
-            // Escape key to close modal
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    closeGridModal();
-                    closeManualSelection();
-                    document.getElementById('gridConfigModal').classList.remove('visible');
-                }
-            });
         });
     </script>
 </body>
