@@ -3,261 +3,940 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investor Support Tools</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Investor Support Tools | LoanNEX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #000005 0%, #0a0a18 30%, #0f0f24 60%, #0a0a18 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: white;
+        }
+
+        /* Starfield Background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        /* Distant galaxies / nebula */
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .nebula-1 {
+            width: 600px;
+            height: 400px;
+            background: radial-gradient(ellipse, #4a1a6b 0%, transparent 70%);
+            top: 10%;
+            right: 10%;
+        }
+
+        .nebula-2 {
+            width: 500px;
+            height: 300px;
+            background: radial-gradient(ellipse, #1a3a6b 0%, transparent 70%);
+            bottom: 20%;
+            left: 5%;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,5,0.95) 0%, transparent 100%);
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: #60a5fa;
+        }
+
+        .header-subtitle {
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+        }
+
+        /* Main Container */
+        .solar-system {
+            position: relative;
+            min-height: 100vh;
+            padding: 100px 40px 120px;
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .solar-container {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            min-width: max-content;
+            padding: 0 60px;
+        }
+
+        /* Sun - TBD */
+        .sun {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            position: relative;
+            background: 
+                radial-gradient(circle at 30% 30%, #fffaf0 0%, #fff5e0 10%, #ffd700 25%, #ffa500 45%, #ff6b00 65%, #ff4500 80%, #cc2200 95%);
+            box-shadow: 
+                0 0 80px rgba(255, 150, 0, 0.9),
+                0 0 160px rgba(255, 100, 0, 0.6),
+                0 0 240px rgba(255, 50, 0, 0.4),
+                inset -20px -20px 40px rgba(200, 50, 0, 0.4);
+            animation: pulse-sun 4s ease-in-out infinite;
+        }
+
+        /* Solar flares */
+        .sun::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 25% 25%, rgba(255,255,255,0.4) 0%, transparent 40%),
+                radial-gradient(ellipse at 70% 60%, rgba(255,200,100,0.2) 0%, transparent 30%);
+        }
+
+        .sun::after {
+            content: '';
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            top: -10%;
+            left: -10%;
+            border-radius: 50%;
+            background: radial-gradient(circle, transparent 40%, rgba(255,100,0,0.1) 50%, transparent 60%);
+            animation: corona 8s linear infinite;
+        }
+
+        @keyframes corona {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .sun-label {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .sun-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .sun-label .desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 2px;
+        }
+
+        @keyframes pulse-sun {
+            0%, 100% { 
+                box-shadow: 0 0 80px rgba(255, 150, 0, 0.9), 0 0 160px rgba(255, 100, 0, 0.6), 0 0 240px rgba(255, 50, 0, 0.4), inset -20px -20px 40px rgba(200, 50, 0, 0.4);
+            }
+            50% { 
+                box-shadow: 0 0 100px rgba(255, 150, 0, 1), 0 0 200px rgba(255, 100, 0, 0.7), 0 0 300px rgba(255, 50, 0, 0.5), inset -20px -20px 40px rgba(200, 50, 0, 0.4);
+            }
+        }
+
+        /* Orbit Line */
+        .orbit-line {
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+            flex-shrink: 0;
+        }
+
+        /* Planet Container */
+        .planet-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* Planet Base Styles */
+        .planet {
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: block;
+            text-decoration: none;
+        }
+
+        .planet:hover {
+            transform: scale(1.12);
+            z-index: 10;
+        }
+
+        .planet-label {
+            text-align: center;
+            margin-top: 20px;
+            max-width: 140px;
+        }
+
+        .planet-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .planet-label .desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.4;
+        }
+
+        /* Mercury - Quick Quote */
+        .mercury {
+            width: 36px;
+            height: 36px;
+            background: 
+                radial-gradient(circle at 25% 25%, #c9c9c9 0%, #a0a0a0 30%, #707070 60%, #4a4a4a 100%);
+            box-shadow: 
+                0 0 20px rgba(150, 150, 150, 0.25),
+                inset -8px -8px 16px rgba(0, 0, 0, 0.5),
+                inset 4px 4px 8px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Crater texture overlay */
+        .mercury::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(circle at 60% 30%, rgba(0,0,0,0.15) 0%, transparent 8%),
+                radial-gradient(circle at 30% 60%, rgba(0,0,0,0.1) 0%, transparent 12%),
+                radial-gradient(circle at 70% 70%, rgba(0,0,0,0.12) 0%, transparent 6%);
+        }
+
+        /* Venus - API Dashboard */
+        .venus {
+            width: 52px;
+            height: 52px;
+            background: 
+                radial-gradient(circle at 30% 30%, #fff8dc 0%, #ffe4a0 20%, #e6c35c 45%, #c9a227 70%, #a67c00 100%);
+            box-shadow: 
+                0 0 30px rgba(218, 165, 32, 0.35),
+                inset -10px -10px 20px rgba(100, 60, 0, 0.4),
+                inset 5px 5px 15px rgba(255, 255, 200, 0.2);
+        }
+
+        /* Atmospheric swirls */
+        .venus::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%),
+                linear-gradient(-30deg, transparent 30%, rgba(200,150,50,0.15) 50%, transparent 70%);
+        }
+
+        /* Earth - Lock Analytics */
+        .earth {
+            width: 56px;
+            height: 56px;
+            background: 
+                radial-gradient(circle at 30% 30%, #87ceeb 0%, #4a90c2 25%, #2d6a9f 40%, #1a5276 55%, #1e8449 65%, #196f3d 80%, #145a32 100%);
+            box-shadow: 
+                0 0 35px rgba(65, 105, 225, 0.45),
+                0 0 60px rgba(30, 132, 73, 0.2),
+                inset -12px -12px 24px rgba(0, 30, 60, 0.5),
+                inset 6px 6px 12px rgba(135, 206, 235, 0.3);
+            position: relative;
+        }
+
+        /* Clouds and continents */
+        .earth::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 40% 30%, rgba(255,255,255,0.4) 0%, transparent 20%),
+                radial-gradient(ellipse at 60% 50%, rgba(255,255,255,0.2) 0%, transparent 25%),
+                radial-gradient(ellipse at 25% 70%, rgba(255,255,255,0.15) 0%, transparent 15%);
+        }
+
+        /* Moon */
+        .earth::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: 
+                radial-gradient(circle at 30% 30%, #e8e8e8 0%, #c0c0c0 40%, #888888 100%);
+            border-radius: 50%;
+            top: -20px;
+            right: -8px;
+            box-shadow: 
+                0 0 10px rgba(255,255,255,0.25),
+                inset -3px -3px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Mars - Investor Reports */
+        .mars {
+            width: 44px;
+            height: 44px;
+            background: 
+                radial-gradient(circle at 30% 30%, #e8a87c 0%, #cd5c45 30%, #b5452a 55%, #8b2500 80%, #5c1a0a 100%);
+            box-shadow: 
+                0 0 25px rgba(205, 92, 69, 0.4),
+                inset -10px -10px 20px rgba(50, 10, 0, 0.5),
+                inset 4px 4px 10px rgba(232, 168, 124, 0.2);
+        }
+
+        /* Mars surface features */
+        .mars::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 45% 20%, rgba(255,255,255,0.15) 0%, transparent 30%),
+                radial-gradient(circle at 30% 70%, rgba(139,37,0,0.3) 0%, transparent 25%),
+                radial-gradient(circle at 65% 55%, rgba(92,26,10,0.2) 0%, transparent 20%);
+        }
+
+        /* Jupiter - Bulk Test Analyzer */
+        .jupiter {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            background: 
+                radial-gradient(circle at 30% 30%, #f5deb3 0%, #deb887 20%, #d2a679 40%, #c9956c 60%, #a67c52 100%);
+            box-shadow: 
+                0 0 50px rgba(212, 165, 116, 0.5),
+                0 0 100px rgba(200, 150, 100, 0.2),
+                inset -20px -20px 40px rgba(80, 40, 0, 0.4),
+                inset 10px 10px 20px rgba(255, 240, 200, 0.2);
+        }
+
+        /* Jupiter bands */
+        .jupiter::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(0deg, 
+                    transparent 0%,
+                    rgba(139, 90, 43, 0.4) 10%,
+                    transparent 15%,
+                    rgba(210, 180, 140, 0.3) 25%,
+                    transparent 30%,
+                    rgba(160, 82, 45, 0.35) 40%,
+                    transparent 45%,
+                    rgba(205, 175, 149, 0.25) 55%,
+                    transparent 60%,
+                    rgba(139, 69, 19, 0.4) 70%,
+                    transparent 75%,
+                    rgba(222, 184, 135, 0.3) 85%,
+                    transparent 90%
+                );
+        }
+
+        /* Great Red Spot */
+        .jupiter::after {
+            content: '';
+            position: absolute;
+            width: 28px;
+            height: 18px;
+            background: radial-gradient(ellipse, #cc5533 0%, #aa3311 60%, #882211 100%);
+            border-radius: 50%;
+            top: 50%;
+            left: 25%;
+            box-shadow: inset 2px 2px 4px rgba(255,100,50,0.3);
+        }
+
+        .jupiter-badge {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            z-index: 5;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
+        }
+
+        /* Saturn */
+        .saturn-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .saturn-system {
+            position: relative;
+            width: 160px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .saturn {
+            width: 75px;
+            height: 75px;
+            background: 
+                radial-gradient(circle at 30% 30%, #faf0d7 0%, #f4e4a6 25%, #e6c35c 50%, #c9a227 75%, #a67c00 100%);
+            box-shadow: 
+                0 0 40px rgba(244, 213, 158, 0.4),
+                inset -15px -15px 30px rgba(100, 60, 0, 0.4),
+                inset 8px 8px 16px rgba(255, 255, 220, 0.2);
+            z-index: 2;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .saturn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Saturn bands */
+        .saturn::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(0deg,
+                    transparent 0%,
+                    rgba(166, 124, 0, 0.2) 20%,
+                    transparent 30%,
+                    rgba(201, 162, 39, 0.15) 50%,
+                    transparent 60%,
+                    rgba(166, 124, 0, 0.2) 80%,
+                    transparent 100%
+                );
+        }
+
+        /* Main ring */
+        .saturn-ring {
+            position: absolute;
+            width: 155px;
+            height: 40px;
+            border-radius: 50%;
+            transform: rotateX(75deg);
+            z-index: 1;
+            background: 
+                radial-gradient(ellipse, 
+                    transparent 45%,
+                    rgba(210, 180, 140, 0.1) 48%,
+                    rgba(210, 180, 140, 0.5) 52%,
+                    rgba(180, 150, 110, 0.6) 58%,
+                    rgba(160, 130, 90, 0.4) 65%,
+                    rgba(140, 110, 70, 0.3) 72%,
+                    rgba(210, 180, 140, 0.5) 78%,
+                    rgba(180, 150, 110, 0.3) 85%,
+                    transparent 92%
+                );
+            pointer-events: none;
+        }
+
+        /* Ring shadow on planet */
+        .saturn-ring-front {
+            position: absolute;
+            width: 155px;
+            height: 40px;
+            border-radius: 50%;
+            transform: rotateX(75deg);
+            z-index: 3;
+            background: 
+                radial-gradient(ellipse, 
+                    transparent 45%,
+                    rgba(210, 180, 140, 0.3) 52%,
+                    rgba(180, 150, 110, 0.4) 60%,
+                    transparent 68%
+                );
+            pointer-events: none;
+        }
+
+        /* Uranus - Buyer-Seller */
+        .uranus {
+            width: 58px;
+            height: 58px;
+            background: 
+                radial-gradient(circle at 35% 35%, #e0ffff 0%, #afeeee 20%, #7fffd4 40%, #40e0d0 60%, #20b2aa 80%, #008b8b 100%);
+            box-shadow: 
+                0 0 35px rgba(64, 224, 208, 0.4),
+                0 0 60px rgba(32, 178, 170, 0.2),
+                inset -12px -12px 24px rgba(0, 80, 80, 0.4),
+                inset 6px 6px 12px rgba(224, 255, 255, 0.3);
+        }
+
+        /* Subtle atmospheric bands */
+        .uranus::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                linear-gradient(80deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+        }
+
+        /* Neptune - n8n Beta */
+        .neptune {
+            width: 54px;
+            height: 54px;
+            background: 
+                radial-gradient(circle at 30% 30%, #b0c4de 0%, #6495ed 25%, #4169e1 45%, #0000cd 70%, #00008b 100%);
+            box-shadow: 
+                0 0 35px rgba(65, 105, 225, 0.5),
+                0 0 60px rgba(0, 0, 205, 0.25),
+                inset -12px -12px 24px rgba(0, 0, 60, 0.5),
+                inset 6px 6px 12px rgba(176, 196, 222, 0.3);
+        }
+
+        /* Storm features */
+        .neptune::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 60% 40%, rgba(255,255,255,0.15) 0%, transparent 20%),
+                radial-gradient(ellipse at 35% 65%, rgba(100,149,237,0.2) 0%, transparent 15%);
+        }
+
+        /* Pluto - Request Tool */
+        .pluto {
+            width: 22px;
+            height: 22px;
+            background: 
+                radial-gradient(circle at 30% 30%, #e8dcc8 0%, #c9b896 40%, #a08060 70%, #705030 100%);
+            box-shadow: 
+                0 0 12px rgba(200, 180, 150, 0.3),
+                inset -4px -4px 8px rgba(50, 30, 10, 0.4);
+        }
+
+        /* Asteroid - Bulk Pricer Beta */
+        .asteroid {
+            position: fixed;
+            top: 15%;
+            right: 20%;
+            width: 60px;
+            height: 45px;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.3s ease;
+            animation: float-asteroid 20s ease-in-out infinite;
+        }
+
+        .asteroid:hover {
+            transform: scale(1.2) rotate(10deg);
+        }
+
+        .asteroid:hover .asteroid-label {
+            opacity: 1;
+        }
+
+        .asteroid-body {
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 30% 30%, #a09080 0%, #706050 40%, #504030 70%, #302010 100%);
+            border-radius: 45% 55% 60% 40% / 50% 45% 55% 50%;
+            box-shadow: 
+                0 0 20px rgba(100, 80, 60, 0.4),
+                inset -10px -8px 20px rgba(0, 0, 0, 0.5),
+                inset 5px 5px 10px rgba(180, 160, 140, 0.2);
+            position: relative;
+        }
+
+        /* Craters on asteroid */
+        .asteroid-body::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: 
+                radial-gradient(circle at 25% 35%, rgba(0,0,0,0.3) 0%, transparent 15%),
+                radial-gradient(circle at 60% 25%, rgba(0,0,0,0.25) 0%, transparent 12%),
+                radial-gradient(circle at 45% 65%, rgba(0,0,0,0.2) 0%, transparent 18%),
+                radial-gradient(circle at 75% 55%, rgba(0,0,0,0.15) 0%, transparent 10%);
+        }
+
+        .asteroid-label {
+            position: absolute;
+            top: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .asteroid-label .name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .asteroid-label .desc {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+        }
+
+        .asteroid-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 3px;
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.5);
+        }
+
+        @keyframes float-asteroid {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-30px, 20px) rotate(5deg); }
+            50% { transform: translate(-10px, -15px) rotate(-3deg); }
+            75% { transform: translate(20px, 10px) rotate(8deg); }
+        }
+
+        /* Legend */
+        .legend {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 20, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 14px 24px;
+            display: flex;
+            gap: 24px;
+            z-index: 100;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.data { background: linear-gradient(135deg, #4169e1, #1e8449); }
+        .legend-dot.tools { background: linear-gradient(135deg, #c9956c, #f97316); }
+        .legend-dot.beta { background: linear-gradient(135deg, #705030, #a09080); }
+
+        /* Scroll hint */
+        .scroll-hint {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.2);
+            font-size: 11px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            animation: bounce-right 2s infinite;
+        }
+
+        @keyframes bounce-right {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            50% { transform: translateY(-50%) translateX(5px); }
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
+<body>
+    <!-- Nebulae -->
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+
+    <!-- Starfield -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Floating Asteroid - Beta Bulk Pricer -->
+    <a href="https://crendy22.github.io/loannex-webapp/" target="_blank" class="asteroid">
+        <div class="asteroid-body"></div>
+        <div class="asteroid-badge">BETA</div>
+        <div class="asteroid-label">
+            <div class="name">Bulk Pricer CR</div>
+            <div class="desc">Prototype webapp</div>
+        </div>
+    </a>
+
     <!-- Header -->
-    <div class="bg-white/10 backdrop-blur-sm border-b border-white/20">
-        <div class="max-w-7xl mx-auto px-8 py-6">
-            <div class="flex items-center gap-3">
-                <svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                </svg>
-                <div>
-                    <h1 class="text-3xl font-bold text-white">Investor Support Tools</h1>
-                    <p class="text-blue-200 text-sm">Operational tools for the investor support team</p>
+    <header class="header">
+        <div class="logo">Loan<span>NEX</span></div>
+        <div class="header-subtitle">Investor Support Tools</div>
+    </header>
+
+    <!-- Solar System -->
+    <div class="solar-system">
+        <div class="solar-container">
+            
+            <!-- Sun - TBD -->
+            <div class="sun">
+                <div class="sun-label">
+                    <div class="name">TBD</div>
+                    <div class="desc">Coming Soon</div>
                 </div>
             </div>
+
+            <div class="orbit-line" style="width: 70px;"></div>
+
+            <!-- Mercury - Quick Quote Insights -->
+            <div class="planet-wrapper">
+                <a href="https://claude.ai/public/artifacts/f5a192f5-fe25-4e3a-9eae-f7190a95225d" target="_blank" class="planet mercury"></a>
+                <div class="planet-label">
+                    <div class="name">Quick Quote Insights</div>
+                    <div class="desc">Quote trends & metrics</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 90px;"></div>
+
+            <!-- Venus - API Dashboard -->
+            <div class="planet-wrapper">
+                <a href="https://claude.ai/public/artifacts/5df10810-27f2-4f4d-9697-1ba764db3fad" target="_blank" class="planet venus"></a>
+                <div class="planet-label">
+                    <div class="name">API Dashboard</div>
+                    <div class="desc">Performance & health</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 100px;"></div>
+
+            <!-- Earth - Lock Analytics -->
+            <div class="planet-wrapper">
+                <a href="Lock-Analytics.html" target="_blank" class="planet earth"></a>
+                <div class="planet-label">
+                    <div class="name">Lock Analytics</div>
+                    <div class="desc">Activity & patterns</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 90px;"></div>
+
+            <!-- Mars - Investor Reports -->
+            <div class="planet-wrapper">
+                <a href="BuysidePricingTiersKA.html" target="_blank" class="planet mars"></a>
+                <div class="planet-label">
+                    <div class="name">Investor Reports</div>
+                    <div class="desc">Pricing tier reports</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 120px;"></div>
+
+            <!-- Jupiter - Bulk Test Analyzer (Featured) -->
+            <div class="planet-wrapper">
+                <a href="Bulk-Test-Analyzer.html" target="_blank" class="planet jupiter">
+                    <span class="jupiter-badge">NEW</span>
+                </a>
+                <div class="planet-label">
+                    <div class="name">Bulk Test Analyzer</div>
+                    <div class="desc">Outliers & coverage gaps</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 100px;"></div>
+
+            <!-- Saturn - PHH CLM Generator -->
+            <div class="saturn-wrapper">
+                <div class="saturn-system">
+                    <a href="clm-generator.html" target="_blank" class="saturn"></a>
+                    <div class="saturn-ring"></div>
+                    <div class="saturn-ring-front"></div>
+                </div>
+                <div class="planet-label" style="margin-top: 8px;">
+                    <div class="name">PHH CLM Generator</div>
+                    <div class="desc">Client Level Margin files</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 100px;"></div>
+
+            <!-- Uranus - Buyer-Seller Analysis -->
+            <div class="planet-wrapper">
+                <a href="Counterparty-Analysis.html" target="_blank" class="planet uranus"></a>
+                <div class="planet-label">
+                    <div class="name">Buyer-Seller Analysis</div>
+                    <div class="desc">Counterparty relationships</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 100px;"></div>
+
+            <!-- Neptune - n8n Bulk Pricing -->
+            <div class="planet-wrapper">
+                <a href="https://loannex.app.n8n.cloud/form/e571f1ec-f269-43ff-aa85-8696d21e1255" target="_blank" class="planet neptune"></a>
+                <div class="planet-label">
+                    <div class="name">Bulk Pricing Tool</div>
+                    <div class="desc">n8n workflow (Beta)</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 80px;"></div>
+
+            <!-- Pluto - Request a Tool -->
+            <div class="planet-wrapper">
+                <a href="https://www.golfdigest.com/courses/nj/pine-valley-golf-club" target="_blank" class="planet pluto"></a>
+                <div class="planet-label">
+                    <div class="name">Request a Tool</div>
+                    <div class="desc">🏌️ Submit ideas</div>
+                </div>
+            </div>
+
+            <div class="orbit-line" style="width: 120px;"></div>
+
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-8 py-12">
-        
-        <!-- Data Hub Section -->
-        <div class="mb-12">
-            <div class="flex items-center gap-3 mb-6">
-                <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-                <h2 class="text-2xl font-bold text-white">Data Hub</h2>
-            </div>
+    <!-- Legend -->
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-dot data"></div>
+            <span>Data Hub</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot tools"></div>
+            <span>Tools</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot beta"></div>
+            <span>Beta / Asteroid</span>
+        </div>
+    </div>
+
+    <!-- Scroll Hint -->
+    <div class="scroll-hint">Scroll →</div>
+
+    <script>
+        // Generate random stars with varying sizes and brightness
+        const starsContainer = document.getElementById('stars');
+        const starCount = 300;
+
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Quick Quote Data Insights -->
-                <a href="https://claude.ai/public/artifacts/f5a192f5-fe25-4e3a-9eae-f7190a95225d" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition">
-                            <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full">Active</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-cyan-300 transition">Quick Quote Insights</h3>
-                    <p class="text-gray-300 text-sm mb-4">Get insights on quick quote data here! Analyze trends and performance metrics.</p>
-                    <div class="flex items-center text-cyan-400 text-sm font-medium">
-                        <span>View Dashboard</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
+            // Vary star sizes
+            const size = Math.random();
+            if (size > 0.95) {
+                star.style.width = '3px';
+                star.style.height = '3px';
+            } else if (size > 0.8) {
+                star.style.width = '2px';
+                star.style.height = '2px';
+            } else {
+                star.style.width = '1px';
+                star.style.height = '1px';
+            }
+            
+            star.style.animationDelay = Math.random() * 3 + 's';
+            star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            starsContainer.appendChild(star);
+        }
 
-                <!-- API Dashboard Insights -->
-                <a href="https://claude.ai/public/artifacts/5df10810-27f2-4f4d-9697-1ba764db3fad" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-indigo-500/20 rounded-lg group-hover:bg-indigo-500/30 transition">
-                            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full">Active</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-indigo-300 transition">API Dashboard Insights</h3>
-                    <p class="text-gray-300 text-sm mb-4">Monitor API performance metrics, usage patterns, and system health in real-time.</p>
-                    <div class="flex items-center text-indigo-400 text-sm font-medium">
-                        <span>View Dashboard</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-
-                <!-- Lock Analytics Dashboard -->
-                <a href="Lock-Analytics.html" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-violet-500/20 rounded-lg group-hover:bg-violet-500/30 transition">
-                            <svg class="w-8 h-8 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full">Active</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-violet-300 transition">Lock Analytics Dashboard</h3>
-                    <p class="text-gray-300 text-sm mb-4">Track and analyze lock activity, patterns, and performance across all investors.</p>
-                    <div class="flex items-center text-violet-400 text-sm font-medium">
-                        <span>View Dashboard</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-
-                <!-- Investor Report Generator -->
-                <a href="BuysidePricingTiersKA.html" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition">
-                            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full">Active</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition">Investor Report Generator</h3>
-                    <p class="text-gray-300 text-sm mb-4">Generate comprehensive investor reports with pricing tiers, products, and lender relationships.</p>
-                    <div class="flex items-center text-blue-400 text-sm font-medium">
-                        <span>View Dashboard</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <!-- Tools Section -->
-        <div>
-            <div class="flex items-center gap-3 mb-6">
-                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                <h2 class="text-2xl font-bold text-white">Tools</h2>
-            </div>
-
-            <!-- Tools Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- PHH CLM Generator Tool -->
-                <a href="clm-generator.html" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition">
-                            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full">Active</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition">PHH CLM Generator</h3>
-                    <p class="text-gray-300 text-sm mb-4">Generate Client Level Margin files from PHH Customer Tiers and Non-Agency Adjustors Template.</p>
-                    <div class="flex items-center text-blue-400 text-sm font-medium">
-                        <span>Open Tool</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-
-                <!-- Buyer-Seller Counterparty Analysis Tool -->
-                <a href="Counterparty-Analysis.html" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition">
-                            <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full">Active</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-purple-300 transition">Buyer-Seller Analysis</h3>
-                    <p class="text-gray-300 text-sm mb-4">Analyze counterparty relationships and pricing tier configurations between buyers and sellers.</p>
-                    <div class="flex items-center text-purple-400 text-sm font-medium">
-                        <span>Open Tool</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-
-                <!-- NEW: Bulk Test Analyzer Tool -->
-                <a href="Bulk-Test-Analyzer.html" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-orange-500/20 rounded-lg group-hover:bg-orange-500/30 transition">
-                            <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full">Active</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-orange-300 transition">Bulk Test Analyzer</h3>
-                    <p class="text-gray-300 text-sm mb-4">Analyze bulk pricing results to identify outliers and coverage gaps across all investors.</p>
-                    <div class="flex items-center text-orange-400 text-sm font-medium">
-                        <span>Open Tool</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-
-            </div>
-        </div>
-
-        <!-- Beta Tools Section -->
-        <div class="mt-12">
-            <div class="flex items-center gap-3 mb-6">
-                <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                </svg>
-                <h2 class="text-2xl font-bold text-white">Beta Tools</h2>
-            </div>
-            <p class="text-gray-300 text-sm mb-6 italic">To be eventually built in real UI. These are for speed, proof of concept, testing, etc.</p>
-
-            <!-- Beta Tools Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- Bulk Pricer CR -->
-                <a href="https://crendy22.github.io/loannex-webapp/" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-amber-500/30 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-amber-500/20 rounded-lg group-hover:bg-amber-500/30 transition">
-                            <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-amber-500/20 text-amber-300 text-xs font-medium rounded-full">Beta</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-amber-300 transition">Bulk Pricer CR</h3>
-                    <p class="text-gray-300 text-sm mb-4">Rapid prototype web application for testing new features and workflows before production integration.</p>
-                    <div class="flex items-center text-amber-400 text-sm font-medium">
-                        <span>Open Beta App</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-
-                <!-- Bulk Pricing Tool Amir -->
-                <a href="https://loannex.app.n8n.cloud/form/e571f1ec-f269-43ff-aa85-8696d21e1255" target="_blank" rel="noopener noreferrer" class="group bg-white/10 backdrop-blur-sm border border-amber-500/30 rounded-xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="p-3 bg-emerald-500/20 rounded-lg group-hover:bg-emerald-500/30 transition">
-                            <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <span class="px-3 py-1 bg-amber-500/20 text-amber-300 text-xs font-medium rounded-full">Beta</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2 group-hover:text-emerald-300 transition">Bulk Pricing Tool Amir</h3>
-                    <p class="text-gray-300 text-sm mb-4">Calculate pricing for multiple loans simultaneously with bulk processing capabilities.</p>
-                    <div class="flex items-center text-emerald-400 text-sm font-medium">
-                        <span>Open Beta Tool</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </a>
-
-            </div>
-        </div>
-
-        <!-- Footer Info -->
-        <div class="mt-12 text-center">
-            <p class="text-gray-400 text-sm">
-                Need a new tool? <a href="https://www.golfdigest.com/courses/nj/pine-valley-golf-club" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">Request it here</a>
-            </p>
-            <p class="text-gray-500 text-xs mt-2">
-                Last updated: December 2024
-            </p>
-        </div>
-    </div>
+        // Hide scroll hint after user scrolls
+        let scrolled = false;
+        document.querySelector('.solar-system').addEventListener('scroll', function() {
+            if (!scrolled) {
+                document.querySelector('.scroll-hint').style.opacity = '0';
+                scrolled = true;
+            }
+        });
+    </script>
 </body>
 </html>
