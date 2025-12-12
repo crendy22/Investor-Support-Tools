@@ -81,7 +81,7 @@
             border-left: 2px solid var(--border-color);
         }
 
-        .status-badge {
+        .nav-link {
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -91,19 +91,20 @@
             border-radius: 6px;
             font-size: 0.875rem;
             color: var(--accent-green);
+            text-decoration: none;
+            transition: all 0.2s;
         }
 
-        .status-dot {
+        .nav-link:hover {
+            background: rgba(16, 185, 129, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .nav-dot {
             width: 8px;
             height: 8px;
             background: var(--accent-green);
             border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         /* Main Layout */
@@ -261,94 +262,40 @@
             font-size: 0.9rem;
         }
 
-        .sheet-grids-count {
-            font-size: 0.75rem;
-            padding: 0.2rem 0.5rem;
+        /* Detected Grids - Now as clickable buttons */
+        .grids-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .grid-btn {
+            padding: 0.5rem 0.75rem;
             background: var(--bg-tertiary);
-            border-radius: 4px;
-            color: var(--text-muted);
-        }
-
-        /* Detected Grids */
-        .grids-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .grid-item {
-            padding: 0.75rem;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-bottom: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: inherit;
         }
 
-        .grid-item:hover {
+        .grid-btn:hover {
             border-color: var(--accent-blue);
-            background: rgba(59, 130, 246, 0.05);
-        }
-
-        .grid-item.selected {
-            border-color: var(--accent-green);
-            background: rgba(16, 185, 129, 0.1);
-        }
-
-        .grid-item-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
-        .grid-type-badge {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .grid-type-badge.fico-cltv {
-            background: rgba(139, 92, 246, 0.2);
-            color: var(--accent-purple);
-        }
-
-        .grid-type-badge.cltv-only {
-            background: rgba(59, 130, 246, 0.2);
-            color: var(--accent-blue);
-        }
-
-        .grid-type-badge.price-cap {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--accent-amber);
-        }
-
-        .grid-type-badge.state {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--accent-green);
-        }
-
-        .grid-type-badge.ppp {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--accent-red);
-        }
-
-        .grid-name {
-            font-size: 0.85rem;
-            font-weight: 500;
             color: var(--text-primary);
+            background: rgba(59, 130, 246, 0.1);
         }
 
-        .grid-meta {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .grid-trigger {
-            font-size: 0.75rem;
-            color: var(--accent-amber);
-            margin-top: 0.25rem;
+        .grid-btn.selected {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
         }
 
         /* Action Buttons */
@@ -401,8 +348,22 @@
             background: #059669;
         }
 
+        .btn-copy {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .btn-copy:hover:not(:disabled) {
+            background: #7c3aed;
+        }
+
         .btn-full {
             width: 100%;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
         }
 
         /* Main Content Area */
@@ -449,6 +410,7 @@
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
+            font-family: inherit;
         }
 
         .preview-tab.active {
@@ -514,6 +476,155 @@
         .cell-header {
             background: var(--bg-secondary) !important;
             font-weight: 600;
+        }
+
+        /* Grid Preview Modal - NEW! */
+        .grid-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 500;
+            padding: 2rem;
+            overflow: auto;
+        }
+
+        .grid-modal-overlay.visible {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .grid-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 95vw;
+            max-width: 1400px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .grid-modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .grid-modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .grid-modal-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-purple);
+            font-weight: 600;
+        }
+
+        .grid-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .grid-modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+        }
+
+        .grid-modal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .grid-modal-table th,
+        .grid-modal-table td {
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .grid-modal-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--accent-blue-light);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .grid-modal-table th:first-child {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        .grid-modal-table td:first-child {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--accent-amber);
+            text-align: left;
+        }
+
+        .grid-modal-table tbody tr:hover td {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .grid-modal-table tbody tr:hover td:first-child {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .grid-modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .grid-modal-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Copy Toast */
+        .copy-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--accent-green);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .copy-toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
         /* Manual Selection Mode */
@@ -665,7 +776,7 @@
             justify-content: flex-end;
         }
 
-        /* Progress/Status Section */
+        /* Progress Section */
         .progress-section {
             padding: 1.5rem;
             background: var(--bg-secondary);
@@ -726,6 +837,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-family: inherit;
         }
 
         .output-tab:hover {
@@ -803,10 +915,10 @@
                 <div class="logo">Loan<span>NEX</span></div>
                 <div class="tool-title">LLPA Grid Transposer</div>
             </div>
-            <div class="status-badge">
-                <div class="status-dot"></div>
-                <span>Investor Support Tools</span>
-            </div>
+            <a href="index.html" class="nav-link">
+                <span class="nav-dot"></span>
+                Investor Support Tools
+            </a>
         </div>
     </header>
 
@@ -858,7 +970,8 @@
                         <div class="card-subtitle" id="gridsSubtitle">0 grids found</div>
                     </div>
                 </div>
-                <div class="grids-list" id="gridsList"></div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">Click any grid to preview & copy</p>
+                <div class="grids-container" id="gridsList"></div>
                 <button class="btn btn-secondary btn-full" id="manualSelectBtn" style="margin-top: 1rem;">
                     ✋ Manual Grid Selection
                 </button>
@@ -919,6 +1032,37 @@
             </div>
         </main>
     </div>
+
+    <!-- Grid Preview Modal - NEW! -->
+    <div class="grid-modal-overlay" id="gridModalOverlay">
+        <div class="grid-modal">
+            <div class="grid-modal-header">
+                <div class="grid-modal-title">
+                    <span id="gridModalName">Grid Name</span>
+                    <span class="grid-modal-badge" id="gridModalBadge">FICO × CLTV</span>
+                </div>
+                <div class="grid-modal-actions">
+                    <button class="btn btn-copy btn-sm" id="copyGridBtn">📋 Copy Grid</button>
+                    <button class="btn btn-secondary btn-sm" id="closeGridModalBtn">✕ Close</button>
+                </div>
+            </div>
+            <div class="grid-modal-body">
+                <table class="grid-modal-table" id="gridModalTable">
+                    <!-- Table will be populated by JS -->
+                </table>
+            </div>
+            <div class="grid-modal-footer">
+                <div class="grid-modal-info" id="gridModalInfo">
+                    <span id="gridModalDimensions">8 rows × 12 columns</span> | 
+                    <span id="gridModalSheet">Sheet: ALLY</span>
+                </div>
+                <button class="btn btn-success btn-sm" id="copyTransposedBtn">📋 Copy for LoanNEX (Transposed)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copy Toast -->
+    <div class="copy-toast" id="copyToast">✓ Copied to clipboard!</div>
 
     <!-- Manual Selection Modal -->
     <div class="manual-mode-overlay" id="manualOverlay">
@@ -1006,6 +1150,7 @@
             manualGrids: [],
             outputData: {},
             currentSheet: null,
+            currentGridForModal: null,
             manualSelection: { start: null, end: null },
             isSelecting: false
         };
@@ -1050,7 +1195,6 @@
             if (value === null || value === undefined) return true;
             const strVal = String(value).trim().toLowerCase();
             if (INELIGIBLE_MARKERS.includes(strVal)) return true;
-            // Check for "9" as ineligible marker (Champions style)
             if (strVal === '9' || strVal === '9.0' || strVal === '9.00') return true;
             return false;
         }
@@ -1061,10 +1205,7 @@
             let numVal = parseFloat(value);
             if (isNaN(numVal)) return 'N/A';
             
-            // Detect basis points (values like -50, -100, 100 that are clearly not percentage points)
-            // Basis points are typically whole numbers >= 10 or <= -10
             if (Math.abs(numVal) >= 10 && Number.isInteger(numVal)) {
-                // Convert basis points to percentage points (divide by 100)
                 numVal = numVal / 100;
             }
             
@@ -1080,38 +1221,32 @@
             
             const str = rangeStr.trim();
             
-            // Handle "780+" or ">=780" or "≥780"
             const plusMatch = str.match(/^[≥>=]*\s*(\d+(?:\.\d+)?)\s*\+?$/);
             if (plusMatch || str.includes('+') || str.startsWith('>=') || str.startsWith('≥')) {
                 const num = parseFloat(str.replace(/[≥>=+\s]/g, ''));
                 return { min: num, max: null };
             }
             
-            // Handle "<=50" or "≤50" or "< 50"
             const lteMatch = str.match(/^[≤<=<]+\s*(\d+(?:\.\d+)?)\s*%?$/);
             if (lteMatch) {
                 return { min: null, max: parseFloat(lteMatch[1]) };
             }
             
-            // Handle "0 - 50" or "0-50" style
             const dashMatch = str.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
             if (dashMatch) {
                 return { min: parseFloat(dashMatch[1]) || null, max: parseFloat(dashMatch[2]) };
             }
             
-            // Handle "50.01-55" or "50.01 - 55"
             const rangeMatch = str.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/);
             if (rangeMatch) {
                 return { min: parseFloat(rangeMatch[1]), max: parseFloat(rangeMatch[2]) };
             }
             
-            // Handle FICO ranges like "720-739" or "720 - 739"
             const ficoMatch = str.match(/(\d{3})\s*[-–]\s*(\d{3})/);
             if (ficoMatch) {
                 return { min: parseFloat(ficoMatch[1]), max: parseFloat(ficoMatch[2]) };
             }
             
-            // Single number
             const num = parseFloat(str.replace(/[%≤≥<>=]/g, ''));
             if (!isNaN(num)) {
                 return { min: num, max: num };
@@ -1121,8 +1256,20 @@
         }
 
         function cleanSheetName(name) {
-            // Remove invalid Excel sheet name characters and truncate
             return name.replace(/[\\\/\?\*\[\]:]/g, '_').substring(0, 31);
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function showCopyToast(message = '✓ Copied to clipboard!') {
+            const toast = document.getElementById('copyToast');
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 2500);
         }
 
         // ============================================
@@ -1143,7 +1290,6 @@
                     const data = new Uint8Array(e.target.result);
                     state.workbook = XLSX.read(data, { type: 'array' });
                     
-                    // Parse all sheets
                     state.sheets = {};
                     state.workbook.SheetNames.forEach(name => {
                         const sheet = state.workbook.Sheets[name];
@@ -1197,7 +1343,6 @@
             
             document.getElementById('sheetsSubtitle').textContent = `${state.workbook.SheetNames.length} tabs found`;
             
-            // Show first sheet preview
             if (state.workbook.SheetNames.length > 0) {
                 displaySheetPreview(state.workbook.SheetNames[0]);
                 detectAllGrids();
@@ -1216,7 +1361,6 @@
             
             let html = '<table class="data-table">';
             
-            // Limit display to first 100 rows and 30 cols for performance
             const maxRows = Math.min(data.length, 100);
             const maxCols = Math.min(Math.max(...data.map(r => r ? r.length : 0)), 30);
             
@@ -1233,12 +1377,6 @@
             
             html += '</table>';
             document.getElementById('sourceView').innerHTML = html;
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
         }
 
         // ============================================
@@ -1264,20 +1402,16 @@
             const rows = data.length;
             const cols = Math.max(...data.map(r => r ? r.length : 0));
             
-            // Track which cells are already part of a detected grid
             const usedCells = new Set();
             
-            // Scan for potential grid headers
             for (let i = 0; i < rows - 2; i++) {
                 for (let j = 0; j < cols - 2; j++) {
-                    // Skip if this cell is already used
                     if (usedCells.has(`${i},${j}`)) continue;
                     
                     const potentialGrid = tryDetectGrid(data, i, j, sheetName);
                     if (potentialGrid) {
                         grids.push(potentialGrid);
                         
-                        // Mark cells as used
                         for (let ri = potentialGrid.startRow; ri <= potentialGrid.endRow; ri++) {
                             for (let ci = potentialGrid.startCol; ci <= potentialGrid.endCol; ci++) {
                                 usedCells.add(`${ri},${ci}`);
@@ -1291,11 +1425,9 @@
         }
 
         function tryDetectGrid(data, startRow, startCol, sheetName) {
-            // Look for CLTV header patterns in the row
             const headerRow = data[startRow];
             if (!headerRow) return null;
             
-            // Find CLTV-like headers (ranges like "≤ 50%", "50.01-55", etc.)
             const cltvHeaders = [];
             let headerStartCol = -1;
             
@@ -1305,28 +1437,22 @@
                 
                 const cellStr = String(cell).trim();
                 
-                // Check if it looks like a CLTV/LTV range header
                 if (isCLTVHeader(cellStr)) {
                     if (headerStartCol === -1) headerStartCol = j;
                     cltvHeaders.push({ col: j, value: cellStr });
                 } else if (cltvHeaders.length > 0) {
-                    // Stop if we hit a non-CLTV cell after finding some
                     break;
                 }
             }
             
-            // Need at least 3 CLTV columns for a valid grid
             if (cltvHeaders.length < 3) return null;
             
-            // Now look for row labels (FICO ranges, adjustment types, etc.)
             const rowLabels = [];
             let dataStartRow = startRow + 1;
             let labelCol = headerStartCol - 1;
             
-            // Find the label column (should be to the left of the first data column)
             if (labelCol < 0) labelCol = 0;
             
-            // Sometimes there's a sub-header row, skip it
             if (data[dataStartRow]) {
                 const firstDataCell = data[dataStartRow][headerStartCol];
                 if (firstDataCell && String(firstDataCell).toLowerCase().includes('credit') || 
@@ -1337,14 +1463,12 @@
                 }
             }
             
-            // Find row labels and data
             for (let i = dataStartRow; i < data.length; i++) {
                 const row = data[i];
                 if (!row) break;
                 
                 const label = row[labelCol];
                 if (!label) {
-                    // Check if there's any data in this row
                     const hasData = cltvHeaders.some(h => {
                         const val = row[h.col];
                         return val !== null && val !== undefined && String(val).trim() !== '';
@@ -1355,13 +1479,11 @@
                 
                 const labelStr = String(label).trim();
                 
-                // Skip if this looks like a section header or non-data row
                 if (isSkippableLabel(labelStr)) {
-                    if (rowLabels.length > 0) break; // End of grid
+                    if (rowLabels.length > 0) break;
                     continue;
                 }
                 
-                // Check if we have actual data values in this row
                 const dataValues = cltvHeaders.map(h => row[h.col]).filter(v => v !== null && v !== undefined);
                 if (dataValues.length < 2) {
                     if (rowLabels.length > 0) break;
@@ -1373,13 +1495,9 @@
             
             if (rowLabels.length < 2) return null;
             
-            // Determine grid type
             const gridType = determineGridType(rowLabels, sheetName, data, startRow);
-            
-            // Determine trigger/context
             const trigger = findGridTrigger(data, startRow, startCol);
             
-            // Create grid object
             return {
                 id: `${sheetName}-${startRow}-${startCol}`,
                 sheetName: sheetName,
@@ -1406,14 +1524,13 @@
             if (!str) return false;
             const s = String(str).trim().toLowerCase();
             
-            // Common CLTV header patterns
             const patterns = [
-                /^[≤<=]\s*\d+/, // ≤ 50, <= 50
-                /^\d+\.?\d*\s*[-–]\s*\d+/, // 50.01-55, 50 - 55
-                /^\d+\.?\d*\s*%?$/, // 50, 50%
-                /^0\s*[-–]/, // 0 - 50
-                /≤\s*50/, // ≤ 50.00
-                /^\d+\.\d+-\d+/, // 50.01-55
+                /^[≤<=]\s*\d+/,
+                /^\d+\.?\d*\s*[-–]\s*\d+/,
+                /^\d+\.?\d*\s*%?$/,
+                /^0\s*[-–]/,
+                /≤\s*50/,
+                /^\d+\.\d+-\d+/,
             ];
             
             return patterns.some(p => p.test(s));
@@ -1431,56 +1548,46 @@
         }
 
         function isFicoRange(str) {
-            // Check if string looks like a FICO range
             const patterns = [
-                /^\d{3}\s*[-–]\s*\d{3}/, // 720-739
-                /^\d{3}\+/, // 780+
-                /^[≥>=]+\s*\d{3}/, // >=780
-                /^[<≤]+\s*\d{3}/, // <620
+                /^\d{3}\s*[-–]\s*\d{3}/,
+                /^\d{3}\+/,
+                /^[≥>=]+\s*\d{3}/,
+                /^[<≤]+\s*\d{3}/,
             ];
             return patterns.some(p => p.test(String(str).trim()));
         }
 
         function determineGridType(rowLabels, sheetName, data, headerRow) {
             const labels = rowLabels.map(r => r.label.toLowerCase());
-            const firstLabel = labels[0];
             
-            // Check for FICO ranges
             if (rowLabels.some(r => isFicoRange(r.label))) {
                 return { type: 'fico-cltv', badge: 'fico-cltv', name: 'FICO_CLTV', rowDim: 'fico' };
             }
             
-            // Check for state codes
             if (rowLabels.every(r => /^[A-Z]{2}$/.test(r.label.trim()))) {
                 return { type: 'state', badge: 'state', name: 'State', rowDim: 'state' };
             }
             
-            // Check for loan amount ranges
             if (labels.some(l => l.includes('$') || l.includes('mm') || l.includes('000'))) {
                 return { type: 'cltv-only', badge: 'cltv-only', name: 'LoanAmt_CLTV', rowDim: 'amount' };
             }
             
-            // Check for property types
             if (labels.some(l => l.includes('condo') || l.includes('unit') || l.includes('sfr') || l.includes('pud'))) {
                 return { type: 'cltv-only', badge: 'cltv-only', name: 'PropType_CLTV', rowDim: 'other' };
             }
             
-            // Check for DTI
             if (labels.some(l => l.includes('dti'))) {
                 return { type: 'cltv-only', badge: 'cltv-only', name: 'DTI_CLTV', rowDim: 'dti' };
             }
             
-            // Check for PPP/prepay
             if (labels.some(l => l.includes('prepay') || l.includes('ppp') || l.includes('year'))) {
                 return { type: 'ppp', badge: 'ppp', name: 'PPP', rowDim: 'ppp' };
             }
             
-            // Default to generic adjustment
             return { type: 'cltv-only', badge: 'cltv-only', name: 'Adjustment_CLTV', rowDim: 'other' };
         }
 
         function findGridTrigger(data, headerRow, startCol) {
-            // Look above the header for context clues
             const triggers = [];
             
             for (let i = Math.max(0, headerRow - 5); i < headerRow; i++) {
@@ -1493,17 +1600,14 @@
                     
                     const cellStr = String(cell).trim().toLowerCase();
                     
-                    // Look for occupancy
                     if (cellStr.includes('primary') && !cellStr.includes('nco')) triggers.push('Primary');
                     else if (cellStr.includes('second home')) triggers.push('Second Home');
                     else if (cellStr.includes('noo') || cellStr.includes('investor') || cellStr.includes('investment')) triggers.push('Investment');
                     
-                    // Look for purpose
                     if (cellStr.includes('purchase') && !cellStr.includes('noo')) triggers.push('Purchase');
                     else if (cellStr.includes('nco') || cellStr.includes('rate/term') || cellStr.includes('r/t')) triggers.push('NCO Refi');
                     else if (cellStr.includes('cash') && cellStr.includes('out') || cellStr.includes('co refi')) triggers.push('CO Refi');
                     
-                    // Look for doc type
                     if (cellStr.includes('full doc')) triggers.push('FullDoc');
                     else if (cellStr.includes('bank statement')) triggers.push('BankStmt');
                     else if (cellStr.includes('1099')) triggers.push('1099');
@@ -1511,13 +1615,11 @@
                     else if (cellStr.includes('dscr')) triggers.push('DSCR');
                     else if (cellStr.includes('asset')) triggers.push('Asset');
                     
-                    // Look for product type
                     if (cellStr.includes('fixed')) triggers.push('Fixed');
                     else if (cellStr.includes('arm')) triggers.push('ARM');
                 }
             }
             
-            // Remove duplicates and join
             return [...new Set(triggers)].slice(0, 3).join('_') || null;
         }
 
@@ -1526,41 +1628,24 @@
             container.innerHTML = '';
             
             if (state.detectedGrids.length === 0) {
-                container.innerHTML = '<div class="empty-state" style="padding: 1rem;"><div class="empty-text">No LLPA grids auto-detected. Try manual selection.</div></div>';
+                container.innerHTML = '<div style="padding: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">No LLPA grids auto-detected. Try manual selection.</div>';
                 document.getElementById('gridsSubtitle').textContent = '0 grids found';
                 document.getElementById('processBtn').disabled = true;
                 return;
             }
             
             state.detectedGrids.forEach((grid, idx) => {
-                const item = document.createElement('div');
-                item.className = `grid-item ${grid.selected ? 'selected' : ''}`;
-                item.innerHTML = `
-                    <div class="grid-item-header">
-                        <span class="grid-type-badge ${grid.badge}">${grid.type}</span>
-                        <input type="checkbox" ${grid.selected ? 'checked' : ''}>
-                    </div>
-                    <div class="grid-name">${grid.name}</div>
-                    <div class="grid-meta">Sheet: ${grid.sheetName} | Rows: ${grid.rowLabels.length} | Cols: ${grid.cltvHeaders.length}</div>
-                    ${grid.trigger ? `<div class="grid-trigger">Trigger: ${grid.trigger}</div>` : ''}
-                `;
+                const btn = document.createElement('button');
+                btn.className = `grid-btn ${grid.selected ? 'selected' : ''}`;
+                btn.textContent = grid.name;
+                btn.title = `${grid.type} | ${grid.rowLabels.length}×${grid.cltvHeaders.length} | ${grid.trigger || 'No trigger'}`;
                 
-                const checkbox = item.querySelector('input[type="checkbox"]');
-                checkbox.addEventListener('change', (e) => {
+                btn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    grid.selected = checkbox.checked;
-                    item.classList.toggle('selected', grid.selected);
-                    updateProcessButton();
+                    openGridModal(grid);
                 });
                 
-                item.addEventListener('click', (e) => {
-                    if (e.target.tagName !== 'INPUT') {
-                        // Show preview of this grid
-                        displaySheetPreview(grid.sheetName);
-                    }
-                });
-                
-                container.appendChild(item);
+                container.appendChild(btn);
             });
             
             document.getElementById('gridsSubtitle').textContent = `${state.detectedGrids.length} grids found`;
@@ -1570,6 +1655,162 @@
         function updateProcessButton() {
             const selectedCount = state.detectedGrids.filter(g => g.selected).length + state.manualGrids.length;
             document.getElementById('processBtn').disabled = selectedCount === 0;
+        }
+
+        // ============================================
+        // GRID MODAL - NEW!
+        // ============================================
+
+        function openGridModal(grid) {
+            state.currentGridForModal = grid;
+            
+            document.getElementById('gridModalName').textContent = grid.name;
+            document.getElementById('gridModalBadge').textContent = grid.type.toUpperCase();
+            document.getElementById('gridModalDimensions').textContent = `${grid.rowLabels.length} rows × ${grid.cltvHeaders.length} columns`;
+            document.getElementById('gridModalSheet').textContent = `Sheet: ${grid.sheetName}`;
+            
+            const data = state.sheets[grid.sheetName];
+            const table = document.getElementById('gridModalTable');
+            
+            // Build table HTML
+            let html = '<thead><tr><th></th>';
+            grid.cltvHeaders.forEach(h => {
+                html += `<th>${escapeHtml(h.value)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            grid.rowLabels.forEach(r => {
+                html += `<tr><td>${escapeHtml(r.label)}</td>`;
+                grid.cltvHeaders.forEach(h => {
+                    const val = data[r.row] ? data[r.row][h.col] : null;
+                    const displayVal = val !== null && val !== undefined ? String(val) : '';
+                    let cellClass = '';
+                    if (isIneligible(val)) {
+                        cellClass = 'cell-na';
+                    } else {
+                        const numVal = parseFloat(val);
+                        if (!isNaN(numVal)) {
+                            cellClass = numVal > 0 ? 'cell-positive' : numVal < 0 ? 'cell-negative' : '';
+                        }
+                    }
+                    html += `<td class="${cellClass}">${escapeHtml(displayVal)}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody>';
+            table.innerHTML = html;
+            
+            document.getElementById('gridModalOverlay').classList.add('visible');
+        }
+
+        function closeGridModal() {
+            document.getElementById('gridModalOverlay').classList.remove('visible');
+            state.currentGridForModal = null;
+        }
+
+        function copyGridToClipboard() {
+            if (!state.currentGridForModal) return;
+            
+            const grid = state.currentGridForModal;
+            const data = state.sheets[grid.sheetName];
+            
+            // Build TSV (tab-separated values) for the raw grid
+            let tsv = '\t' + grid.cltvHeaders.map(h => h.value).join('\t') + '\n';
+            
+            grid.rowLabels.forEach(r => {
+                let row = r.label;
+                grid.cltvHeaders.forEach(h => {
+                    const val = data[r.row] ? data[r.row][h.col] : '';
+                    row += '\t' + (val !== null && val !== undefined ? val : '');
+                });
+                tsv += row + '\n';
+            });
+            
+            navigator.clipboard.writeText(tsv).then(() => {
+                showCopyToast('✓ Grid copied to clipboard!');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                alert('Copy failed. Please try again.');
+            });
+        }
+
+        function copyTransposedToClipboard() {
+            if (!state.currentGridForModal) return;
+            
+            const grid = state.currentGridForModal;
+            const data = state.sheets[grid.sheetName];
+            
+            // Create transposed LoanNEX format
+            const rows = [];
+            
+            // Header row
+            const headerRow = [
+                'Amount', '', 'Second Lien Loan Amount', '', 'HELOC Line Amount', '',
+                'HELOC Draw Amount', '', 'Combined Loan Amount', '', 'DSCR', '',
+                'Q. DSCR', '', 'Front-End DTI', '', 'Back-End DTI', '',
+                'FICO', '', 'HCLTV', '', 'CLTV', '', 'LTV', '', 'LTL', '',
+                'Cash Out', '', 'Cash-in-Hand', '', 'Months Res.', '',
+                'Q Months Res.', '', 'Res. Income', '', 'Q Res. Income', '',
+                'House / Fin. #', '', 'PPP', '', 'LLPA', '', 'Cap'
+            ];
+            rows.push(headerRow.join('\t'));
+            
+            // Min/Max row
+            const minMaxRow = [];
+            for (let i = 0; i < 44; i += 2) {
+                minMaxRow.push('Min', 'Max');
+            }
+            minMaxRow.push('Rate', 'Price', 'Price');
+            rows.push(minMaxRow.join('\t'));
+            
+            // Data rows
+            grid.rowLabels.forEach(rowLabel => {
+                const rowRange = parseRange(rowLabel.label);
+                
+                grid.cltvHeaders.forEach(colHeader => {
+                    const colRange = parseRange(colHeader.value);
+                    const cellValue = data[rowLabel.row] ? data[rowLabel.row][colHeader.col] : null;
+                    const normalizedValue = normalizeValue(cellValue);
+                    
+                    if (normalizedValue === 'N/A') return;
+                    
+                    const outputRow = new Array(47).fill('');
+                    
+                    // Set FICO (columns 18-19) or other row dimension
+                    if (grid.rowDimension === 'fico') {
+                        outputRow[18] = rowRange.min !== null ? rowRange.min : '';
+                        outputRow[19] = rowRange.max !== null ? rowRange.max : '';
+                    } else if (grid.rowDimension === 'amount') {
+                        outputRow[0] = rowRange.min !== null ? rowRange.min : '';
+                        outputRow[1] = rowRange.max !== null ? rowRange.max : '';
+                    } else if (grid.rowDimension === 'dti') {
+                        outputRow[16] = rowRange.min !== null ? rowRange.min : '';
+                        outputRow[17] = rowRange.max !== null ? rowRange.max : '';
+                    }
+                    
+                    // Set CLTV (columns 22-23) or other column dimension
+                    if (grid.colDimension === 'cltv') {
+                        outputRow[22] = colRange.min !== null ? colRange.min : '';
+                        outputRow[23] = colRange.max !== null ? colRange.max : '';
+                    } else if (grid.colDimension === 'ltv') {
+                        outputRow[24] = colRange.min !== null ? colRange.min : '';
+                        outputRow[25] = colRange.max !== null ? colRange.max : '';
+                    }
+                    
+                    // Set value (Price column 45)
+                    outputRow[45] = normalizedValue;
+                    
+                    rows.push(outputRow.join('\t'));
+                });
+            });
+            
+            navigator.clipboard.writeText(rows.join('\n')).then(() => {
+                showCopyToast('✓ LoanNEX format copied!');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                alert('Copy failed. Please try again.');
+            });
         }
 
         // ============================================
@@ -1587,7 +1828,6 @@
                 return;
             }
             
-            // Show progress
             document.getElementById('progressSection').style.display = 'block';
             document.getElementById('progressTitle').textContent = 'Processing grids...';
             document.getElementById('progressCount').textContent = `0 / ${selectedGrids.length}`;
@@ -1601,7 +1841,6 @@
                     const tabName = generateTabName(grid);
                     state.outputData[tabName] = outputRows;
                     
-                    // Update progress
                     const progress = ((idx + 1) / selectedGrids.length) * 100;
                     document.getElementById('progressBar').style.width = `${progress}%`;
                     document.getElementById('progressCount').textContent = `${idx + 1} / ${selectedGrids.length}`;
@@ -1613,7 +1852,6 @@
             document.getElementById('progressTitle').textContent = 'Processing complete!';
             document.getElementById('downloadBtn').style.display = 'block';
             
-            // Show output preview
             displayOutputPreview();
         }
 
@@ -1621,20 +1859,16 @@
             const data = state.sheets[grid.sheetName];
             const rows = [];
             
-            // Special handling for PPP grids
             if (grid.type === 'ppp') {
                 return [['OUT OF SCOPE - PPP grid handling not implemented']];
             }
             
-            // Header row (47 columns)
             const headerRow = createHeaderRow();
             rows.push(headerRow);
             
-            // Min/Max row
             const minMaxRow = createMinMaxRow();
             rows.push(minMaxRow);
             
-            // Process each cell in the grid
             grid.rowLabels.forEach(rowLabel => {
                 const rowRange = parseRange(rowLabel.label);
                 
@@ -1643,19 +1877,13 @@
                     const cellValue = data[rowLabel.row] ? data[rowLabel.row][colHeader.col] : null;
                     const normalizedValue = normalizeValue(cellValue);
                     
-                    // Skip N/A values
                     if (normalizedValue === 'N/A') return;
                     
-                    // Create output row
                     const outputRow = new Array(47).fill(null);
                     
-                    // Set row dimension values
                     setRowDimension(outputRow, grid.rowDimension, rowRange);
-                    
-                    // Set column dimension values (usually CLTV)
                     setColDimension(outputRow, grid.colDimension, colRange);
                     
-                    // Set value based on type
                     if (grid.valueType === 'rate') {
                         outputRow[TEMPLATE_COLUMNS.llpaRate] = normalizedValue;
                     } else if (grid.valueType === 'cap') {
@@ -1709,12 +1937,6 @@
                 case 'ltv':
                     row[TEMPLATE_COLUMNS.ltv.min] = range.min;
                     row[TEMPLATE_COLUMNS.ltv.max] = range.max;
-                    break;
-                case 'state':
-                    // States don't have min/max, just use as-is (handled differently)
-                    break;
-                default:
-                    // For "other", we don't map to specific columns
                     break;
             }
         }
@@ -1775,10 +1997,8 @@
                 tabContainer.appendChild(tab);
             });
             
-            // Show first tab
             renderOutputTable(tabNames[0]);
             
-            // Switch to output view
             document.querySelector('.preview-tab[data-view="output"]').click();
         }
 
@@ -1822,20 +2042,16 @@
                 return;
             }
             
-            // Create new workbook
             const wb = XLSX.utils.book_new();
             
-            // Add each tab
             Object.entries(state.outputData).forEach(([tabName, data]) => {
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 XLSX.utils.book_append_sheet(wb, ws, tabName);
             });
             
-            // Generate filename
             const baseName = state.fileName.replace(/\.[^/.]+$/, '');
             const outputName = `${baseName}_LoanNEX_LLPAs.xlsx`;
             
-            // Download
             XLSX.writeFile(wb, outputName);
         }
 
@@ -1880,7 +2096,6 @@
             html += '</table>';
             container.innerHTML = html;
             
-            // Add selection handlers
             const table = container.querySelector('.manual-table');
             let isSelecting = false;
             
@@ -1912,7 +2127,6 @@
         }
 
         function updateSelectionHighlight(table) {
-            // Clear previous selection
             table.querySelectorAll('td.selecting, td.selected').forEach(td => {
                 td.classList.remove('selecting', 'selected');
             });
@@ -1949,10 +2163,8 @@
                 return;
             }
             
-            // Show config modal
             document.getElementById('gridConfigModal').classList.add('visible');
             
-            // Pre-fill name
             const minRow = Math.min(state.manualSelection.start.row, state.manualSelection.end.row);
             const minCol = Math.min(state.manualSelection.start.col, state.manualSelection.end.col);
             document.getElementById('gridNameInput').value = `${state.currentSheet}-Manual-R${minRow}C${minCol}`;
@@ -1972,11 +2184,9 @@
             
             const data = state.sheets[state.currentSheet];
             
-            // Build row labels and col headers from selection
             const rowLabels = [];
             const cltvHeaders = [];
             
-            // First row is headers
             for (let j = minCol + 1; j <= maxCol; j++) {
                 const val = data[minRow] ? data[minRow][j] : null;
                 if (val !== null && val !== undefined) {
@@ -1984,7 +2194,6 @@
                 }
             }
             
-            // First column is row labels
             for (let i = minRow + 1; i <= maxRow; i++) {
                 const val = data[i] ? data[i][minCol] : null;
                 if (val !== null && val !== undefined) {
@@ -2016,27 +2225,23 @@
             
             state.manualGrids.push(grid);
             
-            // Close modals
             document.getElementById('gridConfigModal').classList.remove('visible');
             closeManualSelection();
             
-            // Update UI
             displayDetectedGrids();
             
-            // Add manual grid to display
             const container = document.getElementById('gridsList');
-            const item = document.createElement('div');
-            item.className = 'grid-item selected';
-            item.innerHTML = `
-                <div class="grid-item-header">
-                    <span class="grid-type-badge cltv-only">manual</span>
-                    <input type="checkbox" checked>
-                </div>
-                <div class="grid-name">${grid.name}</div>
-                <div class="grid-meta">Sheet: ${grid.sheetName} | Manual selection</div>
-                ${grid.trigger ? `<div class="grid-trigger">Trigger: ${grid.trigger}</div>` : ''}
-            `;
-            container.appendChild(item);
+            const btn = document.createElement('button');
+            btn.className = 'grid-btn selected';
+            btn.textContent = grid.name;
+            btn.title = `Manual | ${rowLabels.length}×${cltvHeaders.length}`;
+            
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openGridModal(grid);
+            });
+            
+            container.appendChild(btn);
             
             updateProcessButton();
         }
@@ -2101,6 +2306,27 @@
                 document.getElementById('gridConfigModal').classList.remove('visible');
             });
             document.getElementById('saveGridConfigBtn').addEventListener('click', saveManualGrid);
+            
+            // Grid preview modal - NEW!
+            document.getElementById('closeGridModalBtn').addEventListener('click', closeGridModal);
+            document.getElementById('copyGridBtn').addEventListener('click', copyGridToClipboard);
+            document.getElementById('copyTransposedBtn').addEventListener('click', copyTransposedToClipboard);
+            
+            // Close modal on overlay click
+            document.getElementById('gridModalOverlay').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('gridModalOverlay')) {
+                    closeGridModal();
+                }
+            });
+            
+            // Escape key to close modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeGridModal();
+                    closeManualSelection();
+                    document.getElementById('gridConfigModal').classList.remove('visible');
+                }
+            });
         });
     </script>
 </body>
