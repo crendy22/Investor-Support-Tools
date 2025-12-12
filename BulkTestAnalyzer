@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bulk Test Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50">
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect, useMemo } = React;
+
+    // Expected investors list - these should always return pricing for "BigFriendly" loans
+    const EXPECTED_INVESTORS = [
+      "Acra Lending",
+      "ACC Mortgage",
+      "AD Mortgage",
+      "American Heritage Lending",
+      "Angel Oak Mortgage",
+      "Arc Home Loans",
+      "Arch Mortgage Funding",
+      "Athene Asset Management",
+      "BluePoint Mortgage",
+      "Carrington Mortgage Services",
+      "Champions Funding",
+      "ClearEdge Lending",
+      "Deephaven",
+      "eResi",
+      "First National Bank of America",
+      "HomeXpress",
+      "LoanStream Mortgage",
+      "Logan Finance Corp.",
+      "Lone Star Funds",
+      "Luxury Mortgage",
+      "Maxex",
+      "Newfi",
+      "Newrez",
+      "NQM Funding",
+      "New York Mortgage Trust (NYMT)",
+      "Oaktree Funding Corp.",
+      "Onslow Bay Financial",
+      "PennyMac",
+      "PHH Mortgage",
+      "Redwood Trust",
+      "SG Capital Partners",
+      "Silver Hill Capital",
+      "The Money Source",
+      "Titan Bank",
+      "Verus",
+      "Vista Point",
+      "Western Alliance",
+      "AHL Funding",
+      "Axos Bank",
+      "Broadview",
+      "Capital Alliance",
+      "Castor Financial",
+      "Clout wmb",
+      "Developers Mortgage",
+      "Dominion Financial Services",
+      "First Equity Funding",
+      "FundLoans Capital",
+      "LendVent Realty Capital",
+      "Legions Capital",
+      "LoanLock Prime",
+      "Maverick Lending",
+      "Park Place",
+      "Ponce Mortgage",
+      "TheLender",
+      "Thunderbird",
+      "Goldman Sachs"
+    ];
+
+    // Function to normalize investor names for matching
+    const normalizeInvestorName = (name) => {
+      if (!name) return '';
+      return name.toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .replace(/correspondent|corr|wholesale|ws|llc|inc|corp|mortgage|funding|lending/g, '');
+    };
+
+    // Function to check if an investor matches any expected investor
+    const matchesExpectedInvestor = (actualName, expectedList) => {
+      const normalizedActual = normalizeInvestorName(actualName);
+      for (const expected of expectedList) {
+        const normalizedExpected = normalizeInvestorName(expected);
+        if (normalizedActual.includes(normalizedExpected) || normalizedExpected.includes(normalizedActual)) {
+          return expected;
+        }
+      }
+      return null;
+    };
+
+    const BulkTestAnalyzer = () => {
+      const [fileData, setFileData] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+      const [analysisResults, setAnalysisResults] = useState(null);
+      const [activeTab, setActiveTab] = useState('outliers');
+      const [outlierThreshold, setOutlierThreshold] = useState(0.25);
+      const [productFilter, setProductFilter] = useState('30 Yr. Fixed');
+
+      const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setLoading(true);
+        setError('');
+        setAnalysisResults(null);
+
+        try {
+          const text = await file.text();
+          
+          Papa.parse(text, {
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              if (results.errors.length > 0) {
+                console.warn('Parsing warnings:', results.errors);
+              }
+              
+              const cleanedData = results.data
+                .map(row => {
+                  const cleanedRow = {};
+                  Object.keys(row).forEach(header => {
+                    const cleanedHeader = header.trim().replace(/^\uFEFF/, '');
+                    cleanedRow[cleanedHeader] = row[header];
+                  });
+                  return cleanedRow;
+                })
+                .filter(row => row.LoanNumber && row.Price);
+
+              setFileData({
+                filename: file.name,
+                rows: cleanedData,
+                uploadedAt: new Date().toISOString()
+              });
+              
+              // Run analysis
+              runAnalysis(cleanedData, outlierThreshold, productFilter);
+            },
+            error: (error) => {
+              setError(`Error parsing file: ${error.message}`);
+              setLoading(false);
+            }
+          });
+        } catch (err) {
+          setError(`Error reading file: ${err.message}`);
+          setLoading(false);
+        }
+      };
+
+      const runAnalysis = (data, threshold, prodFilter) => {
+        setLoading(true);
+        
+        try {
+          // Get unique loan numbers and products
+          const uniqueLoans = [...new Set(data.map(r => r.LoanNumber))];
+          const uniqueProducts = [...new Set(data.map(r => r.ProductDescription))];
+          const uniqueInvestors = [...new Set(data.map(r => r.InvestorName))];
+
+          // 1. Find Big Winners (Outliers)
+          const outliers = [];
+          
+          uniqueLoans.forEach(loan => {
+            const loanData = data.filter(r => r.LoanNumber === loan);
+            
+            // Group by product if filter is set
+            const products = prodFilter === 'All' 
+              ? [...new Set(loanData.map(r => r.ProductDescription))]
+              : [prodFilter];
+            
+            products.forEach(product => {
+              const productData = loanData
+                .filter(r => prodFilter === 'All' || r.ProductDescription === product)
+                .sort((a, b) => b.Price - a.Price);
+              
+              if (productData.length >= 2) {
+                const topPrice = productData[0].Price;
+                const secondPrice = productData[1].Price;
+                const delta = topPrice - secondPrice;
+                
+                if (delta > threshold) {
+                  outliers.push({
+                    loanNumber: loan,
+                    product: productData[0].ProductDescription,
+                    topInvestor: productData[0].InvestorName,
+                    topProgram: productData[0].ProgramName,
+                    topPrice: topPrice,
+                    secondInvestor: productData[1].InvestorName,
+                    secondProgram: productData[1].ProgramName,
+                    secondPrice: secondPrice,
+                    delta: delta,
+                    allPrices: productData.slice(0, 5)
+                  });
+                }
+              }
+            });
+          });
+
+          // 2. BigFriendly Coverage Analysis
+          const bigFriendlyLoans = uniqueLoans.filter(loan => 
+            loan.toLowerCase().includes('bigfriendly')
+          );
+          
+          const coverageResults = [];
+          
+          bigFriendlyLoans.forEach(loan => {
+            const loanData = data.filter(r => r.LoanNumber === loan);
+            const investorsFound = [...new Set(loanData.map(r => r.InvestorName))];
+            
+            // Check each expected investor
+            const missingInvestors = [];
+            const foundInvestors = [];
+            
+            EXPECTED_INVESTORS.forEach(expectedInv => {
+              const found = investorsFound.some(actual => {
+                const match = matchesExpectedInvestor(actual, [expectedInv]);
+                return match !== null;
+              });
+              
+              if (found) {
+                // Find the actual name used
+                const actualName = investorsFound.find(actual => 
+                  matchesExpectedInvestor(actual, [expectedInv]) !== null
+                );
+                foundInvestors.push({ expected: expectedInv, actual: actualName });
+              } else {
+                missingInvestors.push(expectedInv);
+              }
+            });
+            
+            coverageResults.push({
+              loanNumber: loan,
+              totalExpected: EXPECTED_INVESTORS.length,
+              totalFound: foundInvestors.length,
+              totalMissing: missingInvestors.length,
+              coveragePercent: ((foundInvestors.length / EXPECTED_INVESTORS.length) * 100).toFixed(1),
+              foundInvestors,
+              missingInvestors,
+              totalInvestorsReturned: investorsFound.length,
+              allInvestorsReturned: investorsFound
+            });
+          });
+
+          // 3. Summary statistics
+          const summary = {
+            totalRows: data.length,
+            uniqueLoans: uniqueLoans.length,
+            uniqueProducts: uniqueProducts.length,
+            uniqueInvestors: uniqueInvestors.length,
+            outlierCount: outliers.length,
+            bigFriendlyLoans: bigFriendlyLoans.length,
+            avgCoverage: coverageResults.length > 0 
+              ? (coverageResults.reduce((sum, r) => sum + parseFloat(r.coveragePercent), 0) / coverageResults.length).toFixed(1)
+              : 0
+          };
+
+          setAnalysisResults({
+            outliers,
+            coverageResults,
+            summary,
+            uniqueProducts,
+            uniqueLoans,
+            uniqueInvestors
+          });
+          
+        } catch (err) {
+          setError(`Analysis error: ${err.message}`);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Re-run analysis when threshold or filter changes
+      useEffect(() => {
+        if (fileData) {
+          runAnalysis(fileData.rows, outlierThreshold, productFilter);
+        }
+      }, [outlierThreshold, productFilter]);
+
+      const exportResults = () => {
+        if (!analysisResults) return;
+
+        const wb = XLSX.utils.book_new();
+
+        // Summary Sheet
+        const summaryData = [
+          ['Bulk Test Analysis Summary'],
+          ['Generated At', new Date().toLocaleString()],
+          ['File', fileData?.filename || 'Unknown'],
+          [''],
+          ['Metrics'],
+          ['Total Rows', analysisResults.summary.totalRows],
+          ['Unique Loans', analysisResults.summary.uniqueLoans],
+          ['Unique Products', analysisResults.summary.uniqueProducts],
+          ['Unique Investors', analysisResults.summary.uniqueInvestors],
+          ['Outliers Found', analysisResults.summary.outlierCount],
+          ['BigFriendly Loans', analysisResults.summary.bigFriendlyLoans],
+          ['Avg Coverage %', analysisResults.summary.avgCoverage + '%']
+        ];
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+        // Outliers Sheet
+        const outliersData = [
+          ['Loan Number', 'Product', 'Top Investor', 'Top Program', 'Top Price', 
+           'Second Investor', 'Second Program', 'Second Price', 'Delta']
+        ];
+        analysisResults.outliers.forEach(o => {
+          outliersData.push([
+            o.loanNumber, o.product, o.topInvestor, o.topProgram, o.topPrice,
+            o.secondInvestor, o.secondProgram, o.secondPrice, o.delta.toFixed(4)
+          ]);
+        });
+        const outliersWs = XLSX.utils.aoa_to_sheet(outliersData);
+        XLSX.utils.book_append_sheet(wb, outliersWs, 'Outliers');
+
+        // Coverage Sheet
+        const coverageData = [
+          ['Loan Number', 'Expected Investors', 'Found', 'Missing', 'Coverage %', 'Missing Investors']
+        ];
+        analysisResults.coverageResults.forEach(c => {
+          coverageData.push([
+            c.loanNumber, c.totalExpected, c.totalFound, c.totalMissing, 
+            c.coveragePercent + '%', c.missingInvestors.join(', ')
+          ]);
+        });
+        const coverageWs = XLSX.utils.aoa_to_sheet(coverageData);
+        XLSX.utils.book_append_sheet(wb, coverageWs, 'Coverage');
+
+        // Missing Investors Detail Sheet
+        const missingData = [['Loan Number', 'Missing Investor']];
+        analysisResults.coverageResults.forEach(c => {
+          c.missingInvestors.forEach(inv => {
+            missingData.push([c.loanNumber, inv]);
+          });
+        });
+        const missingWs = XLSX.utils.aoa_to_sheet(missingData);
+        XLSX.utils.book_append_sheet(wb, missingWs, 'Missing Detail');
+
+        const timestamp = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `BulkTestAnalysis_${timestamp}.xlsx`);
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-slate-800 to-blue-900 text-white">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <div className="text-2xl font-bold">LoanNEX</div>
+                  <div className="h-6 w-px bg-blue-300/50"></div>
+                  <div className="text-sm opacity-90">Bulk Test Analyzer</div>
+                </div>
+                <div className="text-sm opacity-75">Working Smarter Together</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto p-6">
+            {/* Page Title */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Bulk Test Analyzer</h1>
+              <p className="text-gray-600">
+                Analyze bulk pricing results to identify outliers and coverage gaps
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-red-800">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* File Upload Section */}
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Upload Bulk Pricing Results</h2>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                <div className="mb-4">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <label className="cursor-pointer">
+                  <span className="text-lg font-medium text-gray-700 block mb-2">
+                    Drop your NexPricingBatchResult CSV here
+                  </span>
+                  <span className="text-sm text-gray-500">or click to browse</span>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {fileData && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center text-green-700">
+                    <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="font-medium">{fileData.filename}</span>
+                    <span className="ml-2 text-sm">({fileData.rows.length} rows loaded)</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Analysis Controls */}
+            {fileData && (
+              <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div className="flex flex-wrap items-center gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Outlier Threshold
+                    </label>
+                    <select
+                      value={outlierThreshold}
+                      onChange={(e) => setOutlierThreshold(parseFloat(e.target.value))}
+                      className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={0.125}>0.125 (1/8 point)</option>
+                      <option value={0.25}>0.25 (1/4 point)</option>
+                      <option value={0.375}>0.375 (3/8 point)</option>
+                      <option value={0.5}>0.50 (1/2 point)</option>
+                      <option value={0.75}>0.75 (3/4 point)</option>
+                      <option value={1.0}>1.00 (1 point)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Product Filter
+                    </label>
+                    <select
+                      value={productFilter}
+                      onChange={(e) => setProductFilter(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="30 Yr. Fixed">30 Yr. Fixed Only</option>
+                      <option value="All">All Products</option>
+                      {analysisResults?.uniqueProducts?.map(prod => (
+                        <option key={prod} value={prod}>{prod}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="ml-auto">
+                    <button
+                      onClick={exportResults}
+                      disabled={!analysisResults}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                    >
+                      Export Results
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+                <span className="ml-3 text-gray-600">Analyzing data...</span>
+              </div>
+            )}
+
+            {/* Results Section */}
+            {analysisResults && !loading && (
+              <>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-white rounded-xl shadow p-4">
+                    <div className="text-sm text-gray-500">Total Rows</div>
+                    <div className="text-2xl font-bold text-gray-900">{analysisResults.summary.totalRows}</div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow p-4">
+                    <div className="text-sm text-gray-500">Unique Loans</div>
+                    <div className="text-2xl font-bold text-gray-900">{analysisResults.summary.uniqueLoans}</div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow p-4">
+                    <div className="text-sm text-gray-500">Outliers Found</div>
+                    <div className="text-2xl font-bold text-red-600">{analysisResults.summary.outlierCount}</div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow p-4">
+                    <div className="text-sm text-gray-500">Avg Coverage</div>
+                    <div className="text-2xl font-bold text-blue-600">{analysisResults.summary.avgCoverage}%</div>
+                  </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <div className="border-b border-gray-200">
+                    <nav className="flex -mb-px">
+                      <button
+                        onClick={() => setActiveTab('outliers')}
+                        className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === 'outliers'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        🏆 Big Winners / Outliers ({analysisResults.outliers.length})
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('coverage')}
+                        className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === 'coverage'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        📊 BigFriendly Coverage ({analysisResults.coverageResults.length})
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('investors')}
+                        className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === 'investors'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        👥 All Investors ({analysisResults.summary.uniqueInvestors})
+                      </button>
+                    </nav>
+                  </div>
+
+                  <div className="p-6">
+                    {/* Outliers Tab */}
+                    {activeTab === 'outliers' && (
+                      <div>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Pricing Outliers (Delta &gt; {outlierThreshold})
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Investors priced significantly better than the next best option
+                          </p>
+                        </div>
+
+                        {analysisResults.outliers.length === 0 ? (
+                          <div className="text-center py-12 text-gray-500">
+                            <svg className="mx-auto h-12 w-12 text-green-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-lg font-medium text-green-600">No outliers found!</p>
+                            <p className="text-sm">All pricing is within normal competitive range</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {analysisResults.outliers.map((outlier, idx) => (
+                              <div key={idx} className="border border-red-200 bg-red-50 rounded-lg p-4">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
+                                        +{outlier.delta.toFixed(4)} delta
+                                      </span>
+                                      <span className="font-mono text-sm text-gray-600">{outlier.loanNumber}</span>
+                                    </div>
+                                    <div className="mt-2 text-sm text-gray-600">{outlier.product}</div>
+                                  </div>
+                                </div>
+                                
+                                <div className="mt-3 grid grid-cols-2 gap-4">
+                                  <div className="bg-white rounded p-3 border border-red-200">
+                                    <div className="text-xs text-red-600 font-medium mb-1">🥇 TOP PRICE</div>
+                                    <div className="font-bold text-lg text-gray-900">{outlier.topPrice.toFixed(4)}</div>
+                                    <div className="text-sm text-gray-700 font-medium">{outlier.topInvestor}</div>
+                                    <div className="text-xs text-gray-500">{outlier.topProgram}</div>
+                                  </div>
+                                  <div className="bg-white rounded p-3 border border-gray-200">
+                                    <div className="text-xs text-gray-500 font-medium mb-1">🥈 2ND PRICE</div>
+                                    <div className="font-bold text-lg text-gray-700">{outlier.secondPrice.toFixed(4)}</div>
+                                    <div className="text-sm text-gray-600">{outlier.secondInvestor}</div>
+                                    <div className="text-xs text-gray-500">{outlier.secondProgram}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Coverage Tab */}
+                    {activeTab === 'coverage' && (
+                      <div>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            BigFriendly Investor Coverage
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Checking that all expected investors return pricing for BigFriendly loans
+                          </p>
+                        </div>
+
+                        {analysisResults.coverageResults.length === 0 ? (
+                          <div className="text-center py-12 text-gray-500">
+                            <p className="text-lg">No BigFriendly loans found in the data</p>
+                            <p className="text-sm">Upload a file containing loans with "BigFriendly" in the name</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {analysisResults.coverageResults.map((coverage, idx) => (
+                              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <span className="font-mono font-medium text-gray-900">{coverage.loanNumber}</span>
+                                      <span className="ml-3 text-sm text-gray-500">
+                                        {coverage.totalInvestorsReturned} total investors returned pricing
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                        parseFloat(coverage.coveragePercent) >= 80 
+                                          ? 'bg-green-100 text-green-800'
+                                          : parseFloat(coverage.coveragePercent) >= 60
+                                          ? 'bg-yellow-100 text-yellow-800'
+                                          : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {coverage.coveragePercent}% coverage
+                                      </div>
+                                      <div className="text-sm">
+                                        <span className="text-green-600 font-medium">{coverage.totalFound}</span>
+                                        <span className="text-gray-400"> / </span>
+                                        <span className="text-gray-600">{coverage.totalExpected}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {coverage.missingInvestors.length > 0 && (
+                                  <div className="p-4">
+                                    <div className="text-sm font-medium text-red-700 mb-2">
+                                      ⚠️ Missing Expected Investors ({coverage.missingInvestors.length})
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {coverage.missingInvestors.map((inv, i) => (
+                                        <span key={i} className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                                          {inv}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <details className="border-t border-gray-100">
+                                  <summary className="px-4 py-2 cursor-pointer text-sm text-gray-600 hover:bg-gray-50">
+                                    View all {coverage.totalInvestorsReturned} investors that returned pricing
+                                  </summary>
+                                  <div className="px-4 pb-4">
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {coverage.allInvestorsReturned.sort().map((inv, i) => (
+                                        <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                          {inv}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </details>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Investors Tab */}
+                    {activeTab === 'investors' && (
+                      <div>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            All Investors in Results
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Complete list of investors that returned pricing
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {analysisResults.uniqueInvestors.sort().map((inv, idx) => (
+                            <div key={idx} className="px-3 py-2 bg-gray-50 rounded text-sm text-gray-700">
+                              {inv}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Expected Investors Reference */}
+            <details className="mt-6 bg-white rounded-xl shadow-lg overflow-hidden">
+              <summary className="px-6 py-4 cursor-pointer text-gray-700 font-medium hover:bg-gray-50">
+                📋 View Expected Investors List ({EXPECTED_INVESTORS.length} investors)
+              </summary>
+              <div className="px-6 pb-6">
+                <p className="text-sm text-gray-500 mb-4">
+                  These investors are expected to return pricing for all "BigFriendly" test loans
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {EXPECTED_INVESTORS.sort().map((inv, idx) => (
+                    <div key={idx} className="px-3 py-2 bg-blue-50 rounded text-sm text-blue-800">
+                      {inv}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </details>
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gray-800 text-white mt-12">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+              <div className="text-center">
+                <div className="text-xl font-bold mb-2">LoanNEX</div>
+                <p className="text-gray-300 text-sm">Working Smarter Together</p>
+                <p className="text-gray-400 text-xs mt-2">© 2025 LoanNEX. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<BulkTestAnalyzer />);
+  </script>
+</body>
+</html>
