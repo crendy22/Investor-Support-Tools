@@ -2412,15 +2412,15 @@
             state.currentOutputTab = tabNames[0];
             renderOutputTable(tabNames[0]);
             updateCopyButtonText(tabNames[0]);
+            
+            // Switch to output view
+            document.querySelector('.preview-tab[data-view="output"]').click();
         }
         
         function updateCopyButtonText(tabName) {
             const copyBtn = document.getElementById('outputCopyBtn');
             const rowCount = state.outputData[tabName] ? state.outputData[tabName].length - 2 : 0;
             copyBtn.innerHTML = `📋 Copy "${tabName}" (${rowCount} rows)`;
-        }
-            
-            document.querySelector('.preview-tab[data-view="output"]').click();
         }
 
         function renderOutputTable(tabName) {
