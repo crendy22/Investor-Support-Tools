@@ -380,6 +380,104 @@
             flex-direction: column;
         }
 
+        /* Top Action Bar - Prominent process button */
+        .top-action-bar {
+            display: none;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border: 2px solid var(--accent-blue);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+        }
+
+        .top-action-bar.visible {
+            display: flex;
+        }
+
+        .top-action-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .top-action-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .top-action-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .top-action-subtitle span {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .top-process-btn {
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            white-space: nowrap;
+        }
+
+        .top-process-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .top-process-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .top-process-btn:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .top-download-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--accent-green), #059669);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            white-space: nowrap;
+            display: none;
+        }
+
+        .top-download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+
+        .top-action-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
         .preview-header {
             display: flex;
             align-items: center;
@@ -1102,6 +1200,24 @@
 
         <!-- Content Area -->
         <main class="content-area">
+            <!-- Top Action Bar - Prominent process button -->
+            <div class="top-action-bar" id="topActionBar">
+                <div class="top-action-info">
+                    <div class="top-action-title">Ready to Process</div>
+                    <div class="top-action-subtitle" id="topActionSubtitle">
+                        <span id="selectedGridCount">0</span> grids selected from <span id="selectedSheetCount">0</span> sheets
+                    </div>
+                </div>
+                <div class="top-action-buttons">
+                    <button class="top-process-btn" id="topProcessBtn" disabled>
+                        ⚙️ Process Selected Grids
+                    </button>
+                    <button class="top-download-btn" id="topDownloadBtn">
+                        📥 Download Excel
+                    </button>
+                </div>
+            </div>
+
             <!-- Preview Section -->
             <div class="preview-section">
                 <div class="preview-header">
@@ -1490,6 +1606,17 @@
             return name.replace(/[\\\/\?\*\[\]:]/g, '_').substring(0, 31);
         }
 
+        // Convert 0-based row/col to Excel cell reference (e.g., 0,0 -> "A1", 2,26 -> "AA3")
+        function getCellRef(row, col) {
+            let colStr = '';
+            let c = col;
+            while (c >= 0) {
+                colStr = String.fromCharCode((c % 26) + 65) + colStr;
+                c = Math.floor(c / 26) - 1;
+            }
+            return colStr + (row + 1); // Excel rows are 1-based
+        }
+
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str;
@@ -1531,6 +1658,7 @@
                     document.getElementById('sheetsCard').style.display = 'block';
                     document.getElementById('gridsCard').style.display = 'block';
                     document.getElementById('actionsCard').style.display = 'block';
+                    showTopActionBar();
                     
                 } catch (err) {
                     alert('Error reading file: ' + err.message);
@@ -1728,6 +1856,7 @@
             
             const gridType = determineGridType(rowLabels, sheetName, data, startRow);
             const trigger = findGridTrigger(data, startRow, startCol);
+            const cellRef = getCellRef(startRow, labelCol);
             
             return {
                 id: `${sheetName}-${startRow}-${startCol}`,
@@ -1736,8 +1865,9 @@
                 typeBadge: gridType.badge,
                 rowDimension: gridType.rowDim,
                 colDimension: 'cltv',
-                name: `${cleanSheetName(sheetName)}-${gridType.name}`,
+                name: `${cleanSheetName(sheetName)}-${gridType.name}@${cellRef}`,
                 trigger: trigger,
+                cellRef: cellRef,
                 startRow: startRow,
                 startCol: labelCol,
                 endRow: rowLabels[rowLabels.length - 1].row,
@@ -2018,7 +2148,32 @@
 
         function updateProcessButton() {
             const selectedCount = state.detectedGrids.filter(g => g.selected).length + state.manualGrids.length;
+            const sheetCount = state.selectedSheets.size;
+            
+            // Update sidebar button
             document.getElementById('processBtn').disabled = selectedCount === 0;
+            
+            // Update top action bar
+            document.getElementById('topProcessBtn').disabled = selectedCount === 0;
+            document.getElementById('selectedGridCount').textContent = selectedCount;
+            document.getElementById('selectedSheetCount').textContent = sheetCount;
+            
+            // Update title based on state
+            const titleEl = document.querySelector('.top-action-title');
+            if (selectedCount === 0) {
+                titleEl.textContent = 'Select Grids to Process';
+            } else {
+                titleEl.textContent = 'Ready to Process';
+            }
+        }
+        
+        function showTopActionBar() {
+            document.getElementById('topActionBar').classList.add('visible');
+        }
+        
+        function showDownloadButton() {
+            document.getElementById('topDownloadBtn').style.display = 'block';
+            document.getElementById('downloadBtn').style.display = 'block';
         }
 
         // ============================================
@@ -2042,7 +2197,7 @@
             document.getElementById('gridModalBadge').textContent = badgeText;
             
             document.getElementById('gridModalDimensions').textContent = `${grid.rowLabels.length} rows × ${grid.cltvHeaders.length} columns`;
-            document.getElementById('gridModalSheet').textContent = `Sheet: ${grid.sheetName}`;
+            document.getElementById('gridModalSheet').textContent = `Sheet: ${grid.sheetName} • Cell: ${grid.cellRef || 'N/A'}`;
             
             const data = state.sheets[grid.sheetName];
             const table = document.getElementById('gridModalTable');
@@ -2225,6 +2380,7 @@
             
             document.getElementById('progressTitle').textContent = 'Processing complete!';
             document.getElementById('downloadBtn').style.display = 'block';
+            showDownloadButton();
             
             displayOutputPreview();
         }
@@ -2343,7 +2499,8 @@
         function generateTabName(grid) {
             let name = grid.name;
             if (grid.trigger) {
-                name = `${cleanSheetName(grid.sheetName)}-${grid.trigger}-${grid.type === 'fico-cltv' ? 'FICO_CLTV' : grid.rowDimension + '_CLTV'}`;
+                const typeSuffix = grid.type === 'fico-cltv' ? 'FICO_CLTV' : grid.rowDimension + '_CLTV';
+                name = `${cleanSheetName(grid.sheetName)}-${grid.trigger}-${typeSuffix}@${grid.cellRef || ''}`;
             }
             return cleanSheetName(name);
         }
@@ -2645,7 +2802,8 @@
             
             const minRow = Math.min(state.manualSelection.start.row, state.manualSelection.end.row);
             const minCol = Math.min(state.manualSelection.start.col, state.manualSelection.end.col);
-            document.getElementById('gridNameInput').value = `${state.currentSheet}-Manual-R${minRow}C${minCol}`;
+            const cellRef = getCellRef(minRow, minCol);
+            document.getElementById('gridNameInput').value = `${state.currentSheet}-Manual@${cellRef}`;
         }
 
         function saveManualGrid() {
@@ -2689,6 +2847,7 @@
                 valueType: valueType,
                 name: cleanSheetName(name),
                 trigger: trigger || null,
+                cellRef: getCellRef(minRow, minCol),
                 startRow: minRow,
                 startCol: minCol,
                 endRow: maxRow,
@@ -2769,9 +2928,11 @@
             
             // Process button
             document.getElementById('processBtn').addEventListener('click', processGrids);
+            document.getElementById('topProcessBtn').addEventListener('click', processGrids);
             
             // Download button
             document.getElementById('downloadBtn').addEventListener('click', downloadOutput);
+            document.getElementById('topDownloadBtn').addEventListener('click', downloadOutput);
             
             // Manual selection
             document.getElementById('manualSelectBtn').addEventListener('click', openManualSelection);
