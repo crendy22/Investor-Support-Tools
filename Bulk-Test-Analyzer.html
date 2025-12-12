@@ -250,7 +250,41 @@
             });
           });
 
-          // 3. Summary statistics
+          // 3. NeverPrice Analysis - These loans should NOT return any pricing
+          const neverPriceLoans = uniqueLoans.filter(loan => 
+            loan.toLowerCase().includes('neverprice')
+          );
+          
+          const neverPriceViolations = [];
+          
+          neverPriceLoans.forEach(loan => {
+            const loanData = data.filter(r => r.LoanNumber === loan);
+            
+            if (loanData.length > 0) {
+              // Group by investor
+              const investorResults = {};
+              loanData.forEach(row => {
+                if (!investorResults[row.InvestorName]) {
+                  investorResults[row.InvestorName] = [];
+                }
+                investorResults[row.InvestorName].push({
+                  product: row.ProductDescription,
+                  program: row.ProgramName,
+                  price: row.Price,
+                  rate: row.Rate
+                });
+              });
+              
+              neverPriceViolations.push({
+                loanNumber: loan,
+                totalViolations: loanData.length,
+                uniqueInvestors: Object.keys(investorResults).length,
+                investorDetails: investorResults
+              });
+            }
+          });
+
+          // 4. Summary statistics
           const summary = {
             totalRows: data.length,
             uniqueLoans: uniqueLoans.length,
@@ -260,12 +294,16 @@
             bigFriendlyLoans: bigFriendlyLoans.length,
             avgCoverage: coverageResults.length > 0 
               ? (coverageResults.reduce((sum, r) => sum + parseFloat(r.coveragePercent), 0) / coverageResults.length).toFixed(1)
-              : 0
+              : 0,
+            neverPriceLoans: neverPriceLoans.length,
+            neverPriceViolations: neverPriceViolations.length,
+            neverPriceTotalHits: neverPriceViolations.reduce((sum, v) => sum + v.totalViolations, 0)
           };
 
           setAnalysisResults({
             outliers,
             coverageResults,
+            neverPriceViolations,
             summary,
             uniqueProducts,
             uniqueLoans,
@@ -302,9 +340,18 @@
           ['Unique Loans', analysisResults.summary.uniqueLoans],
           ['Unique Products', analysisResults.summary.uniqueProducts],
           ['Unique Investors', analysisResults.summary.uniqueInvestors],
+          [''],
+          ['Outlier Analysis'],
           ['Outliers Found', analysisResults.summary.outlierCount],
+          [''],
+          ['BigFriendly Coverage'],
           ['BigFriendly Loans', analysisResults.summary.bigFriendlyLoans],
-          ['Avg Coverage %', analysisResults.summary.avgCoverage + '%']
+          ['Avg Coverage %', analysisResults.summary.avgCoverage + '%'],
+          [''],
+          ['NeverPrice Violations'],
+          ['NeverPrice Loans Tested', analysisResults.summary.neverPriceLoans],
+          ['Loans with Violations', analysisResults.summary.neverPriceViolations],
+          ['Total Pricing Hits (Should Be 0)', analysisResults.summary.neverPriceTotalHits]
         ];
         const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
         XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
@@ -346,6 +393,22 @@
         const missingWs = XLSX.utils.aoa_to_sheet(missingData);
         XLSX.utils.book_append_sheet(wb, missingWs, 'Missing Detail');
 
+        // NeverPrice Violations Sheet
+        const neverPriceData = [
+          ['Loan Number', 'Investor', 'Product', 'Program', 'Price', 'Rate']
+        ];
+        analysisResults.neverPriceViolations.forEach(v => {
+          Object.entries(v.investorDetails).forEach(([investor, results]) => {
+            results.forEach(r => {
+              neverPriceData.push([
+                v.loanNumber, investor, r.product, r.program, r.price, r.rate
+              ]);
+            });
+          });
+        });
+        const neverPriceWs = XLSX.utils.aoa_to_sheet(neverPriceData);
+        XLSX.utils.book_append_sheet(wb, neverPriceWs, 'NeverPrice Violations');
+
         const timestamp = new Date().toISOString().split('T')[0];
         XLSX.writeFile(wb, `BulkTestAnalysis_${timestamp}.xlsx`);
       };
@@ -371,7 +434,7 @@
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Bulk Test Analyzer</h1>
               <p className="text-gray-600">
-                Analyze bulk pricing results to identify outliers and coverage gaps
+                Analyze bulk pricing results to identify outliers, coverage gaps, and eligibility violations
               </p>
             </div>
 
@@ -422,6 +485,15 @@
                   </div>
                 </div>
               )}
+
+              {/* Test Loan Naming Convention Help */}
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2">📋 Test Loan Naming Conventions</h3>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <div><span className="font-mono bg-blue-100 px-1 rounded">BigFriendly</span> — Should return pricing from all expected investors (coverage check)</div>
+                  <div><span className="font-mono bg-blue-100 px-1 rounded">NeverPrice</span> — Should NOT return any pricing (eligibility edge cases like 101% LTV, 75% DTI)</div>
+                </div>
+              </div>
             </div>
 
             {/* Analysis Controls */}
@@ -488,7 +560,7 @@
             {analysisResults && !loading && (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                   <div className="bg-white rounded-xl shadow p-4">
                     <div className="text-sm text-gray-500">Total Rows</div>
                     <div className="text-2xl font-bold text-gray-900">{analysisResults.summary.totalRows}</div>
@@ -499,11 +571,19 @@
                   </div>
                   <div className="bg-white rounded-xl shadow p-4">
                     <div className="text-sm text-gray-500">Outliers Found</div>
-                    <div className="text-2xl font-bold text-red-600">{analysisResults.summary.outlierCount}</div>
+                    <div className={`text-2xl font-bold ${analysisResults.summary.outlierCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {analysisResults.summary.outlierCount}
+                    </div>
                   </div>
                   <div className="bg-white rounded-xl shadow p-4">
                     <div className="text-sm text-gray-500">Avg Coverage</div>
                     <div className="text-2xl font-bold text-blue-600">{analysisResults.summary.avgCoverage}%</div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow p-4">
+                    <div className="text-sm text-gray-500">NeverPrice Violations</div>
+                    <div className={`text-2xl font-bold ${analysisResults.summary.neverPriceTotalHits > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {analysisResults.summary.neverPriceTotalHits}
+                    </div>
                   </div>
                 </div>
 
@@ -519,7 +599,7 @@
                             : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                       >
-                        🏆 Big Winners / Outliers ({analysisResults.outliers.length})
+                        🏆 Big Winners ({analysisResults.outliers.length})
                       </button>
                       <button
                         onClick={() => setActiveTab('coverage')}
@@ -530,6 +610,16 @@
                         }`}
                       >
                         📊 BigFriendly Coverage ({analysisResults.coverageResults.length})
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('neverprice')}
+                        className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === 'neverprice'
+                            ? 'border-red-500 text-red-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        🚫 NeverPrice Violations ({analysisResults.summary.neverPriceTotalHits})
                       </button>
                       <button
                         onClick={() => setActiveTab('investors')}
@@ -679,6 +769,83 @@
                                     </div>
                                   </div>
                                 </details>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* NeverPrice Tab */}
+                    {activeTab === 'neverprice' && (
+                      <div>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            NeverPrice Violations
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            These loans should NOT return any pricing — any results indicate eligibility rule failures (e.g., 101% LTV, 75% DTI)
+                          </p>
+                        </div>
+
+                        {analysisResults.summary.neverPriceLoans === 0 ? (
+                          <div className="text-center py-12 text-gray-500">
+                            <p className="text-lg">No NeverPrice loans found in the data</p>
+                            <p className="text-sm">Upload a file containing loans with "NeverPrice" in the name</p>
+                          </div>
+                        ) : analysisResults.neverPriceViolations.length === 0 ? (
+                          <div className="text-center py-12 text-gray-500">
+                            <svg className="mx-auto h-12 w-12 text-green-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-lg font-medium text-green-600">All NeverPrice loans correctly returned no pricing!</p>
+                            <p className="text-sm">{analysisResults.summary.neverPriceLoans} loan(s) tested</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {analysisResults.neverPriceViolations.map((violation, idx) => (
+                              <div key={idx} className="border-2 border-red-300 bg-red-50 rounded-lg overflow-hidden">
+                                <div className="bg-red-100 px-4 py-3 border-b border-red-200">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-2xl">🚨</span>
+                                      <div>
+                                        <span className="font-mono font-bold text-red-900">{violation.loanNumber}</span>
+                                        <p className="text-sm text-red-700">This loan should NOT have returned any pricing!</p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-2xl font-bold text-red-700">{violation.totalViolations}</div>
+                                      <div className="text-xs text-red-600">pricing results</div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="p-4">
+                                  <div className="text-sm font-medium text-red-800 mb-3">
+                                    🔴 {violation.uniqueInvestors} investor(s) incorrectly returned pricing:
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    {Object.entries(violation.investorDetails).map(([investor, results], i) => (
+                                      <div key={i} className="bg-white rounded-lg p-3 border border-red-200">
+                                        <div className="font-medium text-gray-900 mb-2">{investor}</div>
+                                        <div className="space-y-1">
+                                          {results.map((r, j) => (
+                                            <div key={j} className="text-sm text-gray-600 flex items-center gap-2">
+                                              <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded font-mono">
+                                                {r.price.toFixed(4)}
+                                              </span>
+                                              <span>{r.product}</span>
+                                              <span className="text-gray-400">•</span>
+                                              <span className="text-gray-500">{r.program}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
                             ))}
                           </div>
