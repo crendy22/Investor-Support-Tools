@@ -822,6 +822,41 @@
             padding: 1rem;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
+            align-items: center;
+        }
+
+        .output-tabs-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .output-copy-btn {
+            padding: 0.6rem 1.25rem;
+            background: linear-gradient(135deg, var(--accent-green), #0ea572);
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: auto;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            flex-shrink: 0;
+        }
+
+        .output-copy-btn:hover {
+            background: linear-gradient(135deg, #0ea572, #059669);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .output-copy-btn:active {
+            transform: translateY(0);
         }
 
         .output-tab {
@@ -849,6 +884,83 @@
             background: var(--accent-blue);
             border-color: var(--accent-blue);
             color: white;
+        }
+
+        /* Compact output table - shrink empty columns */
+        .data-table.compact-output {
+            table-layout: fixed;
+        }
+
+        .data-table.compact-output td.empty-col,
+        .data-table.compact-output th.empty-col {
+            width: 12px !important;
+            min-width: 12px !important;
+            max-width: 12px !important;
+            padding: 0.25rem 1px !important;
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            opacity: 0.3;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .data-table.compact-output td.has-data,
+        .data-table.compact-output th.has-data {
+            min-width: 55px;
+            width: auto;
+            background: rgba(59, 130, 246, 0.08);
+            border-left: 2px solid var(--accent-blue) !important;
+        }
+
+        .data-table.compact-output th.has-data {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue-light);
+            font-weight: 600;
+        }
+
+        /* Highlight the value columns (LLPA Rate, Price, Cap) */
+        .data-table.compact-output td.value-col {
+            background: rgba(16, 185, 129, 0.15) !important;
+            font-weight: 700;
+            min-width: 70px;
+            border-left: 3px solid var(--accent-green) !important;
+        }
+
+        .data-table.compact-output th.value-col {
+            background: rgba(16, 185, 129, 0.3) !important;
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+        
+        /* Output table info bar */
+        .output-info-bar {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .output-info-bar span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .output-info-bar .has-data-indicator {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-blue);
+            border-radius: 2px;
+        }
+        
+        .output-info-bar .value-indicator {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-green);
+            border-radius: 2px;
         }
 
         /* Empty State */
@@ -1008,7 +1120,10 @@
                         </div>
                     </div>
                     <div id="outputView" class="table-wrapper" style="display: none;">
-                        <div class="output-tabs" id="outputTabs"></div>
+                        <div class="output-tabs" id="outputTabs">
+                            <div class="output-tabs-wrapper" id="outputTabsWrapper"></div>
+                            <button class="output-copy-btn" id="outputCopyBtn" style="display: none;">📋 Copy Tab to Clipboard</button>
+                        </div>
                         <div id="outputTableContainer">
                             <div class="empty-state">
                                 <div class="empty-icon">📋</div>
@@ -1151,6 +1266,7 @@
             outputData: {},
             currentSheet: null,
             currentGridForModal: null,
+            currentOutputTab: null,
             manualSelection: { start: null, end: null },
             isSelecting: false
         };
@@ -2257,30 +2373,52 @@
         // ============================================
 
         function displayOutputPreview() {
-            const tabContainer = document.getElementById('outputTabs');
+            const tabContainer = document.getElementById('outputTabsWrapper');
             const tableContainer = document.getElementById('outputTableContainer');
+            const copyBtn = document.getElementById('outputCopyBtn');
             
             tabContainer.innerHTML = '';
             
             const tabNames = Object.keys(state.outputData);
             if (tabNames.length === 0) {
                 tableContainer.innerHTML = '<div class="empty-state"><div class="empty-title">No Output Generated</div></div>';
+                copyBtn.style.display = 'none';
                 return;
             }
+            
+            // Show copy button
+            copyBtn.style.display = 'block';
             
             tabNames.forEach((tabName, idx) => {
                 const tab = document.createElement('button');
                 tab.className = `output-tab ${idx === 0 ? 'active' : ''}`;
-                tab.textContent = tabName;
+                
+                // Show row count in tab
+                const rowCount = state.outputData[tabName].length - 2; // Subtract header rows
+                tab.textContent = `${tabName} (${rowCount})`;
+                tab.title = `${tabName} - ${rowCount} data rows`;
+                
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
+                    state.currentOutputTab = tabName;
                     renderOutputTable(tabName);
+                    updateCopyButtonText(tabName);
                 });
                 tabContainer.appendChild(tab);
             });
             
+            // Set initial active tab
+            state.currentOutputTab = tabNames[0];
             renderOutputTable(tabNames[0]);
+            updateCopyButtonText(tabNames[0]);
+        }
+        
+        function updateCopyButtonText(tabName) {
+            const copyBtn = document.getElementById('outputCopyBtn');
+            const rowCount = state.outputData[tabName] ? state.outputData[tabName].length - 2 : 0;
+            copyBtn.innerHTML = `📋 Copy "${tabName}" (${rowCount} rows)`;
+        }
             
             document.querySelector('.preview-tab[data-view="output"]').click();
         }
@@ -2294,29 +2432,98 @@
                 return;
             }
             
-            let html = '<table class="data-table">';
+            // Analyze which columns have data (skip header rows 0 and 1)
+            const colHasData = new Array(47).fill(false);
+            const valueColumns = [44, 45, 46]; // Rate, Price, Cap columns
+            
+            // Mark value columns as always having data
+            valueColumns.forEach(c => colHasData[c] = true);
+            
+            // Check data rows for populated columns
+            for (let rowIdx = 2; rowIdx < data.length; rowIdx++) {
+                const row = data[rowIdx];
+                if (!row) continue;
+                for (let colIdx = 0; colIdx < row.length; colIdx++) {
+                    const cell = row[colIdx];
+                    if (cell !== null && cell !== undefined && cell !== '' && cell !== 'N/A') {
+                        colHasData[colIdx] = true;
+                    }
+                }
+            }
+            
+            // Count populated dimension columns
+            const populatedCols = colHasData.filter((v, i) => v && !valueColumns.includes(i)).length;
+            const dataRows = data.length - 2;
+            
+            let html = `<div class="output-info-bar">
+                <span><span class="has-data-indicator"></span> Populated dimensions (${populatedCols})</span>
+                <span><span class="value-indicator"></span> LLPA values</span>
+                <span style="margin-left: auto;">${dataRows} rows ready to paste</span>
+            </div>`;
+            
+            html += '<table class="data-table compact-output">';
             
             data.forEach((row, rowIdx) => {
                 html += '<tr>';
                 row.forEach((cell, colIdx) => {
                     const tag = rowIdx < 2 ? 'th' : 'td';
-                    let cellClass = '';
+                    let cellClasses = [];
                     let displayVal = cell !== null && cell !== undefined ? cell : '';
                     
+                    // Add column status class
+                    if (valueColumns.includes(colIdx)) {
+                        cellClasses.push('value-col');
+                    } else if (colHasData[colIdx]) {
+                        cellClasses.push('has-data');
+                    } else {
+                        cellClasses.push('empty-col');
+                        // For empty columns, show abbreviated header in first row only
+                        if (rowIdx === 0 && displayVal) {
+                            displayVal = String(displayVal).substring(0, 2);
+                        } else if (rowIdx > 0) {
+                            displayVal = '';
+                        }
+                    }
+                    
+                    // Add value formatting classes
                     if (displayVal === 'N/A') {
-                        cellClass = 'cell-na';
+                        cellClasses.push('cell-na');
                     } else if (typeof displayVal === 'number') {
-                        cellClass = displayVal > 0 ? 'cell-positive' : displayVal < 0 ? 'cell-negative' : '';
+                        cellClasses.push(displayVal > 0 ? 'cell-positive' : displayVal < 0 ? 'cell-negative' : '');
                         displayVal = displayVal.toFixed ? displayVal.toFixed(3) : displayVal;
                     }
                     
-                    html += `<${tag} class="${cellClass}">${escapeHtml(String(displayVal))}</${tag}>`;
+                    html += `<${tag} class="${cellClasses.join(' ')}">${escapeHtml(String(displayVal))}</${tag}>`;
                 });
                 html += '</tr>';
             });
             
             html += '</table>';
             container.innerHTML = html;
+        }
+
+        function copyCurrentOutputTab() {
+            if (!state.currentOutputTab || !state.outputData[state.currentOutputTab]) {
+                showCopyToast('❌ No data to copy');
+                return;
+            }
+            
+            const data = state.outputData[state.currentOutputTab];
+            
+            // Convert to TSV format
+            const tsv = data.map(row => 
+                row.map(cell => {
+                    if (cell === null || cell === undefined) return '';
+                    return String(cell);
+                }).join('\t')
+            ).join('\n');
+            
+            navigator.clipboard.writeText(tsv).then(() => {
+                showCopyToast(`✓ "${state.currentOutputTab}" copied to clipboard!`);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                alert('Copy failed. Please try again.');
+            });
         }
 
         function downloadOutput() {
@@ -2594,6 +2801,9 @@
             document.getElementById('closeGridModalBtn').addEventListener('click', closeGridModal);
             document.getElementById('copyGridBtn').addEventListener('click', copyGridToClipboard);
             document.getElementById('copyTransposedBtn').addEventListener('click', copyTransposedToClipboard);
+            
+            // Output copy button
+            document.getElementById('outputCopyBtn').addEventListener('click', copyCurrentOutputTab);
             
             // Close modal on overlay click
             document.getElementById('gridModalOverlay').addEventListener('click', (e) => {
