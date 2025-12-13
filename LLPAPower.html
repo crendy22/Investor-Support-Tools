@@ -1441,7 +1441,7 @@
         // LLPA GRID TRANSPOSER - MAIN APPLICATION
         // ============================================
 
-        // Global State
+        // Global State - exposed on window for extension access
         const state = {
             workbook: null,
             fileName: '',
@@ -1459,6 +1459,35 @@
             manualSelection: { start: null, end: null },
             isSelecting: false
         };
+        
+        // Expose state globally for Chrome extension access
+        window.llpaPowerState = state;
+        
+        // Listen for extension requests
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'LLPA_EXTENSION_GET_DATA') {
+                const data = {};
+                Object.keys(state.outputData).forEach(tabName => {
+                    const rows = state.outputData[tabName];
+                    // Skip header rows (first 2), convert to TSV
+                    const dataRows = rows.slice(2).map(row => 
+                        row.map(cell => cell === null ? '' : cell).join('\t')
+                    ).join('\n');
+                    
+                    data[tabName] = {
+                        name: tabName,
+                        sheet: state.outputSheetMap[tabName] || '',
+                        clipboardData: dataRows,
+                        rowCount: rows.length - 2
+                    };
+                });
+                
+                window.postMessage({
+                    type: 'LLPA_EXTENSION_DATA',
+                    data: data
+                }, '*');
+            }
+        });
 
         // Template column mapping (based on llpa_template_copy_paster.xlsx)
         const TEMPLATE_COLUMNS = {
