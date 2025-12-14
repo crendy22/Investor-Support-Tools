@@ -1,0 +1,413 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.logo {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #00d9ff, #0066ff);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.subtitle {
+  color: #888;
+  font-size: 14px;
+}
+
+/* Sections */
+.section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.section.active {
+  display: block;
+}
+
+.section h2 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #00d9ff;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #aaa;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #00d9ff;
+}
+
+.form-group input::placeholder {
+  color: #666;
+}
+
+.hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 10px;
+}
+
+/* Upload Zone */
+.upload-zone {
+  border: 2px dashed #444;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.upload-zone:hover {
+  border-color: #00d9ff;
+  background: rgba(0, 217, 255, 0.05);
+}
+
+.upload-zone.dragover {
+  border-color: #00d9ff;
+  background: rgba(0, 217, 255, 0.1);
+}
+
+.upload-zone.has-file {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.upload-text {
+  color: #aaa;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.upload-text .link {
+  color: #00d9ff;
+}
+
+.file-name {
+  margin-top: 10px;
+  font-weight: 600;
+  color: #00ff88;
+}
+
+/* Preview Table */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+#loanCount {
+  color: #00d9ff;
+  font-weight: 600;
+}
+
+.btn-small {
+  padding: 8px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-small:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.table-wrapper {
+  max-height: 300px;
+  overflow: auto;
+  border-radius: 8px;
+  border: 1px solid #333;
+  margin-bottom: 20px;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.preview-table th {
+  background: rgba(0, 217, 255, 0.1);
+  padding: 12px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #00d9ff;
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid #333;
+}
+
+.preview-table td {
+  padding: 10px;
+  border-bottom: 1px solid #222;
+  color: #ccc;
+}
+
+.preview-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.preview-table .loan-number {
+  font-weight: 600;
+  color: #fff;
+}
+
+.preview-table .rate {
+  color: #00ff88;
+}
+
+.preview-table .price {
+  color: #ffaa00;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #00d9ff, #0066ff);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 25px rgba(0, 217, 255, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Progress */
+.progress-container {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.progress-circle {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 25px;
+}
+
+.progress-circle svg {
+  transform: rotate(-90deg);
+}
+
+.progress-circle circle {
+  fill: none;
+  stroke-width: 10;
+}
+
+.progress-bg {
+  stroke: #333;
+}
+
+.progress-fill {
+  stroke: #00d9ff;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.progress-status {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.progress-detail {
+  font-size: 14px;
+  color: #888;
+}
+
+.log-section {
+  background: #111;
+  border-radius: 8px;
+  padding: 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 25px;
+  font-family: monospace;
+  font-size: 12px;
+  text-align: left;
+}
+
+.log-entry {
+  padding: 4px 0;
+  color: #888;
+}
+
+.log-entry.success {
+  color: #00ff88;
+}
+
+.log-entry.error {
+  color: #ff4444;
+}
+
+.log-entry.info {
+  color: #00d9ff;
+}
+
+/* Results */
+.results-container {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.results-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.results-subtitle {
+  color: #888;
+  margin-bottom: 25px;
+}
+
+.results-list {
+  max-height: 250px;
+  overflow-y: auto;
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.result-item.success {
+  border-left: 3px solid #00ff88;
+}
+
+.result-item.error {
+  border-left: 3px solid #ff4444;
+}
+
+.result-item .loan-id {
+  font-weight: 600;
+}
+
+.result-item .message {
+  flex: 1;
+  text-align: right;
+  color: #888;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  body {
+    padding: 20px 15px;
+  }
+  
+  .header h1 {
+    font-size: 22px;
+  }
+  
+  .logo {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+  
+  .section {
+    padding: 20px;
+  }
+  
+  .upload-zone {
+    padding: 30px 20px;
+  }
+  
+  .preview-table {
+    font-size: 11px;
+  }
+}

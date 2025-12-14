@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: loannex-bulk-locker
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production

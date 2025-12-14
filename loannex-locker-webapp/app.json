@@ -1,0 +1,17 @@
+{
+  "name": "LoanNex Bulk Locker",
+  "description": "Web-based bulk loan locking automation",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "https://github.com/mxschmitt/heroku-playwright-buildpack.git"
+    }
+  ],
+  "env": {
+    "PLAYWRIGHT_BUILDPACK_BROWSERS": {
+      "value": "chromium"
+    }
+  }
+}
