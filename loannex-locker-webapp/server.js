@@ -108,8 +108,77 @@ function parseCSV(csvContent) {
   }).filter(loan => loan !== null);
 }
 
-// Main automation function
+// Process a single loan on a given page
+async function processSingleLoan(page, loan, loanIndex, totalLoans, clientId) {
+  console.log(`[Tab] Processing loan ${loan.loanNumber}...`);
+  
+  sendProgress(clientId, { 
+    type: 'progress', 
+    current: loanIndex, 
+    total: totalLoans, 
+    loan: loan.loanNumber,
+    message: `Processing ${loan.loanNumber}...`
+  });
+  
+  try {
+    // Navigate to NexApp
+    await page.goto('https://dev.loannex.com/iframe/loadiframe?page=nex-app');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
+    
+    // Get the iframe
+    await page.waitForSelector('iframe', { timeout: 10000 });
+    const frameElement = await page.$('iframe');
+    const frame = frameElement ? await frameElement.contentFrame() : page;
+    
+    // Wait for form to be ready
+    await frame.waitForSelector('[tabindex="1"]', { timeout: 10000 });
+    console.log(`[${loan.loanNumber}] Form found, filling...`);
+    sendProgress(clientId, { type: 'status', message: `Filling form for ${loan.loanNumber}...` });
+    
+    // Fill the loan form
+    await fillLoanForm(frame, loan, page);
+    sendProgress(clientId, { type: 'status', message: `Form filled for ${loan.loanNumber}` });
+    
+    // Click Get Price
+    sendProgress(clientId, { type: 'status', message: `Getting price for ${loan.loanNumber}...` });
+    await frame.click('button:has-text("Get Price")');
+    await page.waitForTimeout(5000);
+    
+    // Clear target price filter
+    const targetPriceInput = await frame.$('input[placeholder="Target Price"]');
+    if (targetPriceInput) {
+      await targetPriceInput.fill('');
+      await page.waitForTimeout(2000);
+    }
+    
+    // Find and click the correct Lock button
+    sendProgress(clientId, { type: 'status', message: `Finding matching price for ${loan.loanNumber}...` });
+    const locked = await findAndClickLock(frame, loan, page);
+    
+    if (locked) {
+      // Fill lock form
+      await page.waitForTimeout(2000);
+      await fillLockForm(frame, loan, page);
+      
+      sendProgress(clientId, { type: 'success', loan: loan.loanNumber, message: 'Locked successfully' });
+      return { loan: loan.loanNumber, status: 'success', message: 'Locked' };
+    } else {
+      sendProgress(clientId, { type: 'error', loan: loan.loanNumber, message: 'No matching price found' });
+      return { loan: loan.loanNumber, status: 'error', message: 'Could not find matching price row' };
+    }
+    
+  } catch (err) {
+    console.error(`[${loan.loanNumber}] Error:`, err.message);
+    sendProgress(clientId, { type: 'error', loan: loan.loanNumber, message: err.message });
+    return { loan: loan.loanNumber, status: 'error', message: err.message };
+  }
+}
+
+// Main automation function - PARALLEL VERSION
 async function lockLoans(username, password, loans, clientId) {
+  const PARALLEL_TABS = 3;
+  
   const browser = await chromium.launch({
     headless: true,
     args: [
@@ -118,7 +187,9 @@ async function lockLoans(username, password, loans, clientId) {
       '--disable-dev-shm-usage',
       '--disable-gpu',
       '--no-zygote',
-      '--single-process'
+      '--single-process',
+      '--disable-extensions',
+      '--disable-background-networking'
     ]
   });
   
@@ -126,110 +197,59 @@ async function lockLoans(username, password, loans, clientId) {
     viewport: { width: 1400, height: 900 }
   });
   
-  const page = await context.newPage();
   const results = [];
   
   try {
-    // Login to LoanNex
+    // Login once on initial page
     sendProgress(clientId, { type: 'status', message: 'Logging into LoanNex...' });
     
-    await page.goto('https://dev.loannex.com');
-    await page.waitForLoadState('networkidle');
+    const loginPage = await context.newPage();
+    await loginPage.goto('https://dev.loannex.com');
+    await loginPage.waitForLoadState('networkidle');
     
     // Fill login form
-    await page.fill('input[type="text"], input[name="username"], input[name="email"]', username);
-    await page.fill('input[type="password"]', password);
+    await loginPage.fill('input[type="text"], input[name="username"], input[name="email"]', username);
+    await loginPage.fill('input[type="password"]', password);
     
     // Click the Sign In button
-    await page.click('input#btnSubmit');
+    await loginPage.click('input#btnSubmit');
     
-    // Wait for navigation to complete (login redirects to dashboard)
-    await page.waitForTimeout(5000);
-    await page.waitForLoadState('networkidle');
+    // Wait for login to complete
+    await loginPage.waitForTimeout(5000);
+    await loginPage.waitForLoadState('networkidle');
     
-    sendProgress(clientId, { type: 'status', message: 'Login successful!' });
+    sendProgress(clientId, { type: 'status', message: 'Login successful! Starting parallel processing...' });
     
-    // Navigate to NexApp
-    await page.goto('https://dev.loannex.com/iframe/loadiframe?page=nex-app');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
+    // Close login page - session cookies are stored in context
+    await loginPage.close();
     
-    // Process each loan
-    for (let i = 0; i < loans.length; i++) {
-      const loan = loans[i];
-      
-      // Debug: log the loan data
-      console.log('Processing loan:', JSON.stringify(loan, null, 2));
+    // Process loans in batches of PARALLEL_TABS
+    for (let i = 0; i < loans.length; i += PARALLEL_TABS) {
+      const batch = loans.slice(i, i + PARALLEL_TABS);
+      const batchNum = Math.floor(i / PARALLEL_TABS) + 1;
+      const totalBatches = Math.ceil(loans.length / PARALLEL_TABS);
       
       sendProgress(clientId, { 
-        type: 'progress', 
-        current: i, 
-        total: loans.length, 
-        loan: loan.loanNumber,
-        message: `Processing ${loan.loanNumber}...`
+        type: 'status', 
+        message: `Processing batch ${batchNum} of ${totalBatches} (${batch.length} loans in parallel)...` 
       });
       
-      try {
-        // Get the iframe - wait for it to appear
-        await page.waitForSelector('iframe', { timeout: 10000 });
-        const frameElement = await page.$('iframe');
-        const frame = frameElement ? await frameElement.contentFrame() : page;
-        
-        // Wait for form to be ready inside iframe
-        await frame.waitForSelector('[tabindex="1"]', { timeout: 10000 });
-        console.log('Form found in iframe, starting to fill...');
-        sendProgress(clientId, { type: 'status', message: `Filling form for ${loan.loanNumber}...` });
-        
-        // Fill the loan form
-        await fillLoanForm(frame, loan, page);
-        sendProgress(clientId, { type: 'status', message: `Form filled for ${loan.loanNumber}` });
-        
-        // Click Get Price
-        sendProgress(clientId, { type: 'status', message: `Getting price for ${loan.loanNumber}...` });
-        await frame.click('button:has-text("Get Price")');
-        await page.waitForTimeout(5000);
-        
-        // Clear target price filter
-        const targetPriceInput = await frame.$('input[placeholder="Target Price"]');
-        if (targetPriceInput) {
-          await targetPriceInput.fill('');
-          await page.waitForTimeout(2000);
-        }
-        
-        // Find and click the correct Lock button
-        sendProgress(clientId, { type: 'status', message: `Finding matching price for ${loan.loanNumber}...` });
-        const locked = await findAndClickLock(frame, loan, page);
-        
-        if (locked) {
-          // Fill lock form
-          await page.waitForTimeout(2000);
-          await fillLockForm(frame, loan, page);
-          
-          results.push({ loan: loan.loanNumber, status: 'success', message: 'Locked' });
-          sendProgress(clientId, { type: 'success', loan: loan.loanNumber, message: 'Locked successfully' });
-        } else {
-          results.push({ loan: loan.loanNumber, status: 'error', message: 'Could not find matching price row' });
-          sendProgress(clientId, { type: 'error', loan: loan.loanNumber, message: 'No matching price found' });
-        }
-        
-        // Navigate to Add Scenario for next loan
-        if (i < loans.length - 1) {
-          sendProgress(clientId, { type: 'status', message: 'Navigating to next loan...' });
-          const addScenarioLink = await page.$('a[title="Add Scenario"]');
-          if (addScenarioLink) {
-            await addScenarioLink.click();
-          } else {
-            await page.goto('https://dev.loannex.com/iframe/loadiframe?page=nex-app');
-          }
-          await page.waitForLoadState('networkidle');
-          await page.waitForTimeout(3000);
-        }
-        
-      } catch (err) {
-        console.error(`Error processing loan ${loan.loanNumber}:`, err);
-        results.push({ loan: loan.loanNumber, status: 'error', message: err.message });
-        sendProgress(clientId, { type: 'error', loan: loan.loanNumber, message: err.message });
-      }
+      // Create pages for this batch
+      const pages = await Promise.all(
+        batch.map(() => context.newPage())
+      );
+      
+      // Process all loans in batch simultaneously
+      const batchResults = await Promise.all(
+        batch.map((loan, batchIndex) => 
+          processSingleLoan(pages[batchIndex], loan, i + batchIndex, loans.length, clientId)
+        )
+      );
+      
+      results.push(...batchResults);
+      
+      // Close pages from this batch
+      await Promise.all(pages.map(p => p.close()));
     }
     
   } catch (err) {
@@ -249,18 +269,14 @@ async function fillLoanForm(frame, loan, page) {
   // Helper to fill a dropdown (PrimeNG p-autocomplete or p-dropdown)
   async function fillDropdown(tabindex, value, waitAfter = 0) {
     if (!value) {
-      console.log(`  Skipping dropdown tabindex=${tabindex} - no value`);
       return;
     }
     
     try {
       const element = await frame.$(`[tabindex="${tabindex}"]`);
       if (!element) {
-        console.log(`  Dropdown tabindex=${tabindex} not found`);
         return;
       }
-      
-      console.log(`  Filling dropdown tabindex=${tabindex} with: ${value}`);
       
       // Click to focus and open dropdown
       await element.click();
@@ -280,34 +296,27 @@ async function fillLoanForm(frame, loan, page) {
       const option = await frame.$(`li.p-autocomplete-item:has-text("${value}"), li.p-dropdown-item:has-text("${value}"), li:has-text("${value}")`);
       if (option) {
         await option.click();
-        console.log(`    Clicked option: ${value}`);
       } else {
-        // Try pressing Enter to select first match
         await page.keyboard.press('Enter');
-        console.log(`    Pressed Enter for: ${value}`);
       }
       
       await frame.waitForTimeout(200 + waitAfter);
     } catch (err) {
-      console.log(`  Error filling dropdown tabindex=${tabindex}: ${err.message}`);
+      // Continue on error
     }
   }
   
   // Helper to fill a number field
   async function fillNumber(tabindex, value) {
     if (!value) {
-      console.log(`  Skipping number tabindex=${tabindex} - no value`);
       return;
     }
     
     try {
       const element = await frame.$(`[tabindex="${tabindex}"]`);
       if (!element) {
-        console.log(`  Number field tabindex=${tabindex} not found`);
         return;
       }
-      
-      console.log(`  Filling number tabindex=${tabindex} with: ${value}`);
       
       // Click to focus
       await element.click();
@@ -324,10 +333,8 @@ async function fillLoanForm(frame, loan, page) {
       // Tab out to trigger validation
       await page.keyboard.press('Tab');
       await frame.waitForTimeout(100);
-      
-      console.log(`    Filled number: ${value}`);
     } catch (err) {
-      console.log(`  Error filling number tabindex=${tabindex}: ${err.message}`);
+      // Continue on error
     }
   }
   
@@ -339,18 +346,16 @@ async function fillLoanForm(frame, loan, page) {
       const element = await frame.$(`[tabindex="${tabindex}"]`);
       if (element) {
         await element.click();
-        console.log(`  Clicked checkbox tabindex=${tabindex}`);
       }
     } catch (err) {
-      console.log(`  Error with checkbox tabindex=${tabindex}: ${err.message}`);
+      // Continue on error
     }
   }
   
-  // Fill dropdowns in order (skip Purpose - tabindex 4 - as it's auto-populated)
+  // Fill dropdowns in order
   await fillDropdown('1', loan.loanType);
   await fillDropdown('2', loan.citizenship);
-  await fillDropdown('3', loan.incomeDoc, 300);  // Wait after for Purpose to update
-  // Skip tabindex 4 (Purpose) - it's auto-populated based on other fields
+  await fillDropdown('3', loan.incomeDoc, 300);
   await fillDropdown('5', loan.occupancy);
   await fillDropdown('9', loan.propertyType);
   
@@ -361,7 +366,7 @@ async function fillLoanForm(frame, loan, page) {
   
   await fillDropdown('18', loan.secondaryFinancing);
   
-  // State and County (with extra wait for county to load)
+  // State and County
   await fillDropdown('25', loan.state, 500);
   await fillDropdown('26', loan.county);
   
@@ -452,22 +457,19 @@ async function findAndClickLock(frame, loan, page) {
   return false;
 }
 
-// Fill the lock form popup - using evaluate to match extension's exact DOM approach
+// Fill the lock form popup
 async function fillLockForm(frame, loan, page) {
   try {
     console.log('Waiting for lock form popup...');
     
-    // Wait for the Submit Lock modal to appear
     await frame.waitForSelector('button:has-text("Submit Lock")', { timeout: 10000 });
     await page.waitForTimeout(1500);
     
     console.log('Lock form popup found, filling fields...');
     
-    // Use evaluate to run the same DOM logic as the extension
     const results = await frame.evaluate((loanData) => {
       const logs = [];
       
-      // Exact same field mapping as extension
       const lockFields = [
         { loanField: 'borrowerFirstName', formFor: 'borrowerFirstName' },
         { loanField: 'borrowerLastName', formFor: 'borrowerLastName' },
@@ -483,27 +485,21 @@ async function fillLockForm(frame, loan, page) {
       for (const field of lockFields) {
         const value = loanData[field.loanField];
         if (!value) {
-          logs.push(`Skipping ${field.formFor} - no value`);
           continue;
         }
         
-        // Find input by label's "for" attribute - EXACTLY like extension
         const label = document.querySelector(`label[for="${field.formFor}"]`);
         if (!label) {
-          logs.push(`Label not found for ${field.formFor}`);
           continue;
         }
         
-        // Find the input within same container - EXACTLY like extension
         const container = label.closest('.flex.flex-col');
         const input = container?.querySelector('input');
         
         if (!input) {
-          logs.push(`Input not found for ${field.formFor}`);
           continue;
         }
         
-        // Fill the input - EXACTLY like extension
         input.focus();
         input.value = value;
         input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -517,11 +513,6 @@ async function fillLockForm(frame, loan, page) {
       return logs;
     }, loan);
     
-    // Log the results
-    for (const log of results) {
-      console.log(`  ${log}`);
-    }
-    
     await page.waitForTimeout(500);
     
     // Click Submit Lock button
@@ -532,7 +523,6 @@ async function fillLockForm(frame, loan, page) {
       console.log('Submit Lock clicked!');
       await page.waitForTimeout(3000);
       
-      // Wait for popup to close (indicates success)
       try {
         await frame.waitForSelector('button:has-text("Submit Lock")', { 
           state: 'hidden', 
@@ -542,8 +532,6 @@ async function fillLockForm(frame, loan, page) {
       } catch (e) {
         console.log('Popup may still be open - continuing');
       }
-    } else {
-      console.log('Submit Lock button not found');
     }
     
   } catch (e) {
