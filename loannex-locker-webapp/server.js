@@ -110,13 +110,15 @@ function parseCSV(csvContent) {
 
 // Main automation function
 async function lockLoans(username, password, loans, clientId) {
-  const browser = await chromium.launch({ 
-    headless: false,  // SET TO FALSE TO SEE THE BROWSER
+  const browser = await chromium.launch({
+    headless: true,
     args: [
-      '--no-sandbox', 
+      '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--no-zygote',
+      '--single-process'
     ]
   });
   
