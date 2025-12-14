@@ -623,7 +623,7 @@ app.post('/api/preview', upload.single('file'), (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`🚀 LoanNex Bulk Locker running at http://localhost:${PORT}`);
 });
