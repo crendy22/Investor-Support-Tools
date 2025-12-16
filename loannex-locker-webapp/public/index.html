@@ -18,56 +18,161 @@
       </div>
     </header>
 
-    <!-- Credentials Card -->
-    <div class="card">
-      <h2>1. LoanNex Credentials</h2>
-      <div class="form-group">
-        <label for="username">Username / Email</label>
-        <input type="text" id="username" placeholder="Enter your username">
+    <div class="main-layout">
+      <!-- Left Column: Forms -->
+      <div class="left-column">
+        <!-- Credentials Card -->
+        <div class="card">
+          <h2>1. LoanNex Credentials</h2>
+          <div class="form-group">
+            <label for="username">Username / Email</label>
+            <input type="text" id="username" placeholder="Enter your username">
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password">
+          </div>
+          <div class="security-note">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <circle cx="12" cy="16" r="1"></circle>
+              <path d="M7 11V7a5 5 0 0110 0v4"></path>
+            </svg>
+            <span>Credentials are used once and never stored</span>
+          </div>
+        </div>
+
+        <!-- File Upload Card -->
+        <div class="card">
+          <h2>2. Upload Loan File</h2>
+          <div class="file-upload" id="dropZone">
+            <div class="file-upload-icon">📄</div>
+            <p>Drag and drop your CSV file here, or <span class="browse">browse</span></p>
+            <input type="file" id="fileInput" accept=".csv" hidden>
+          </div>
+          <div class="file-name hidden" id="fileName"></div>
+          
+          <!-- Loan Preview -->
+          <div class="loan-preview hidden" id="loanPreview">
+            <table>
+              <thead>
+                <tr>
+                  <th>Loan #</th>
+                  <th>Rate</th>
+                  <th>Price</th>
+                  <th>Investor</th>
+                  <th>Lock Days</th>
+                </tr>
+              </thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button class="btn-primary" id="startBtn" disabled>Start Locking Process</button>
       </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Enter your password">
-      </div>
-      <div class="security-note">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <circle cx="12" cy="16" r="1"></circle>
-          <path d="M7 11V7a5 5 0 0110 0v4"></path>
-        </svg>
-        <span>Credentials are used once and never stored</span>
+
+      <!-- Right Column: Sample File Guide -->
+      <div class="right-column">
+        <div class="card sample-guide">
+          <h2>📋 CSV File Format</h2>
+          <p class="guide-intro">Your file should include these key columns:</p>
+          
+          <div class="sample-spreadsheet">
+            <div class="spreadsheet-header">
+              <div class="col col-loan">LoanNumber</div>
+              <div class="col col-rate">Rate</div>
+              <div class="col col-price">Price</div>
+              <div class="col col-investor">InvestorName</div>
+              <div class="col col-product">ProductDescription</div>
+              <div class="col col-lockdays">LockDays</div>
+              <div class="col col-program">ProgramName</div>
+              <div class="col col-lock">Lock?</div>
+            </div>
+            <div class="spreadsheet-row">
+              <div class="col col-loan">123456</div>
+              <div class="col col-rate">7.125</div>
+              <div class="col col-price">102.005</div>
+              <div class="col col-investor">ACME Capital</div>
+              <div class="col col-product">30 Yr Fixed</div>
+              <div class="col col-lockdays">30</div>
+              <div class="col col-program">Standard</div>
+              <div class="col col-lock">X</div>
+            </div>
+            <div class="spreadsheet-row alt">
+              <div class="col col-loan">123457</div>
+              <div class="col col-rate">6.875</div>
+              <div class="col col-price">101.250</div>
+              <div class="col col-investor">First Bank</div>
+              <div class="col col-product">15 Yr Fixed</div>
+              <div class="col col-lockdays">45</div>
+              <div class="col col-program">Premium</div>
+              <div class="col col-lock">X</div>
+            </div>
+          </div>
+
+          <div class="column-callouts">
+            <div class="callout callout-rate">
+              <div class="callout-dot"></div>
+              <div class="callout-text">
+                <strong>Rate</strong>
+                <span>Target interest rate to match</span>
+              </div>
+            </div>
+            <div class="callout callout-price">
+              <div class="callout-dot"></div>
+              <div class="callout-text">
+                <strong>Price</strong>
+                <span>Exact price to match (e.g., 102.005)</span>
+              </div>
+            </div>
+            <div class="callout callout-investor">
+              <div class="callout-dot"></div>
+              <div class="callout-text">
+                <strong>InvestorName</strong>
+                <span>Must match investor in results</span>
+              </div>
+            </div>
+            <div class="callout callout-product">
+              <div class="callout-dot"></div>
+              <div class="callout-text">
+                <strong>ProductDescription</strong>
+                <span>Product type to match</span>
+              </div>
+            </div>
+            <div class="callout callout-program">
+              <div class="callout-dot"></div>
+              <div class="callout-text">
+                <strong>ProgramName</strong>
+                <span>Program name to match</span>
+              </div>
+            </div>
+            <div class="callout callout-lock">
+              <div class="callout-dot"></div>
+              <div class="callout-text">
+                <strong>Lock?</strong>
+                <span>Put "X" to lock this loan</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="additional-fields">
+            <p><strong>Also include loan data fields:</strong></p>
+            <span class="field-tag">LoanType</span>
+            <span class="field-tag">Occupancy</span>
+            <span class="field-tag">PropertyType</span>
+            <span class="field-tag">FICO</span>
+            <span class="field-tag">LoanAmount</span>
+            <span class="field-tag">State</span>
+            <span class="field-tag">County</span>
+            <span class="field-tag">DTI</span>
+            <span class="field-tag">Borrower Name</span>
+            <span class="field-tag">Property Address</span>
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- File Upload Card -->
-    <div class="card">
-      <h2>2. Upload Loan File</h2>
-      <div class="file-upload" id="dropZone">
-        <div class="file-upload-icon">📄</div>
-        <p>Drag and drop your CSV file here, or <span class="browse">browse</span></p>
-        <input type="file" id="fileInput" accept=".csv" hidden>
-      </div>
-      <div class="file-name hidden" id="fileName"></div>
-      
-      <!-- Loan Preview -->
-      <div class="loan-preview hidden" id="loanPreview">
-        <table>
-          <thead>
-            <tr>
-              <th>Loan #</th>
-              <th>Rate</th>
-              <th>Price</th>
-              <th>Investor</th>
-              <th>Lock Days</th>
-            </tr>
-          </thead>
-          <tbody id="previewBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Action Button -->
-    <button class="btn-primary" id="startBtn" disabled>Start Locking Process</button>
 
     <!-- Progress Section -->
     <div class="card progress-section" id="progressSection">
