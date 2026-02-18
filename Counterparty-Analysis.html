@@ -494,6 +494,37 @@
         let selectedEntities = new Set();
         let currentAnalysis = {};
         let currentMode = null; // 'buyer' or 'seller'
+        
+        // PHH Mortgage name variants mapping
+        const PHH_VARIANTS = ['PHH Mortgage', 'PHH Mortgage Corporation'];
+        
+        // Helper function to check if a name matches PHH (any variant)
+        function isPHH(name) {
+            return PHH_VARIANTS.includes(name);
+        }
+        
+        // Helper function to check if a set contains any PHH variant
+        function hasPHHVariant(nameSet) {
+            for (let variant of PHH_VARIANTS) {
+                if (nameSet.has(variant)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Helper function to get all PHH pricing tiers from a seller
+        function getPHHTiers(seller) {
+            const allTiers = new Set();
+            for (let variant of PHH_VARIANTS) {
+                if (seller.pricingTiersByCounterparty[variant]) {
+                    for (let tier of seller.pricingTiersByCounterparty[variant]) {
+                        allTiers.add(tier);
+                    }
+                }
+            }
+            return allTiers;
+        }
 
         function handleDragOver(e) {
             e.preventDefault();
@@ -814,6 +845,7 @@
                 selectedEntities.forEach(buyerName => {
                     const buyer = buyerOrgs[buyerName];
                     const buyerOrgGuids = Array.from(buyer.orgGuids);
+                    const isBuyerPHH = isPHH(buyerName);
                     
                     currentAnalysis[buyerName] = {
                         type: 'buyer',
@@ -842,13 +874,24 @@
                             let statusDetail = '';
                             let pricingTiers = '';
                             
-                            if (seller.pricingTierCounterparties.has(buyerName)) {
-                                statusDetail = 'Active - Has buyer in pricing tiers';
-                                totalActive++;
-                                // Get the pricing tiers this buyer is in
-                                if (seller.pricingTiersByCounterparty[buyerName]) {
+                            // Special handling for PHH - check all variants
+                            let isInPricingTiers = false;
+                            if (isBuyerPHH) {
+                                isInPricingTiers = hasPHHVariant(seller.pricingTierCounterparties);
+                                if (isInPricingTiers) {
+                                    const phhTiers = getPHHTiers(seller);
+                                    pricingTiers = Array.from(phhTiers).join('|');
+                                }
+                            } else {
+                                isInPricingTiers = seller.pricingTierCounterparties.has(buyerName);
+                                if (isInPricingTiers && seller.pricingTiersByCounterparty[buyerName]) {
                                     pricingTiers = Array.from(seller.pricingTiersByCounterparty[buyerName]).join('|');
                                 }
+                            }
+                            
+                            if (isInPricingTiers) {
+                                statusDetail = 'Active - Has buyer in pricing tiers';
+                                totalActive++;
                             } else if (!seller.hasPricingTiers) {
                                 statusDetail = 'Active - No tiers configured (using defaults)';
                                 totalActive++;
@@ -880,6 +923,7 @@
                     // Find all buyers counterpartied to this seller
                     Object.keys(buyerOrgs).forEach(buyerName => {
                         const buyer = buyerOrgs[buyerName];
+                        const isBuyerPHH = isPHH(buyerName);
                         
                         let isCounterpartied = false;
                         
@@ -912,13 +956,24 @@
                             let statusDetail = '';
                             let pricingTiers = '';
                             
-                            if (seller.pricingTierCounterparties.has(buyerName)) {
-                                statusDetail = 'Active - Buyer enabled in pricing tiers';
-                                totalActive++;
-                                // Get the pricing tiers this buyer is in
-                                if (seller.pricingTiersByCounterparty[buyerName]) {
+                            // Special handling for PHH - check all variants
+                            let isInPricingTiers = false;
+                            if (isBuyerPHH) {
+                                isInPricingTiers = hasPHHVariant(seller.pricingTierCounterparties);
+                                if (isInPricingTiers) {
+                                    const phhTiers = getPHHTiers(seller);
+                                    pricingTiers = Array.from(phhTiers).join('|');
+                                }
+                            } else {
+                                isInPricingTiers = seller.pricingTierCounterparties.has(buyerName);
+                                if (isInPricingTiers && seller.pricingTiersByCounterparty[buyerName]) {
                                     pricingTiers = Array.from(seller.pricingTiersByCounterparty[buyerName]).join('|');
                                 }
+                            }
+                            
+                            if (isInPricingTiers) {
+                                statusDetail = 'Active - Buyer enabled in pricing tiers';
+                                totalActive++;
                             } else if (!seller.hasPricingTiers) {
                                 statusDetail = 'Active - No tiers configured (all buyers active)';
                                 totalActive++;
