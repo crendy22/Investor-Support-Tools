@@ -1121,6 +1121,86 @@
         function downloadExcel() {
             const wb = XLSX.utils.book_new();
             
+            // Calculate summary statistics
+            let totalCounterparties = 0;
+            let totalActive = 0;
+            let totalNotActive = 0;
+            let totalWithTiers = 0;
+            let totalNoTiers = 0;
+            const sellersWithTiers = []; // Track sellers that have buyer explicitly in tiers
+            
+            Object.keys(currentAnalysis).forEach(entityName => {
+                const analysis = currentAnalysis[entityName];
+                analysis.counterpartyDetails.forEach(cp => {
+                    totalCounterparties++;
+                    
+                    if (cp.status.startsWith('Active')) {
+                        totalActive++;
+                        
+                        if (cp.status.includes('No tiers configured')) {
+                            totalNoTiers++;
+                        } else if (cp.status.includes('pricing tiers')) {
+                            totalWithTiers++;
+                            // Track this seller and their tiers
+                            sellersWithTiers.push({
+                                seller: cp.name,
+                                tiers: cp.pricingTiers
+                            });
+                        }
+                    } else {
+                        totalNotActive++;
+                    }
+                });
+            });
+            
+            const activityRate = totalCounterparties > 0 
+                ? ((totalActive / totalCounterparties) * 100).toFixed(1) 
+                : '0.0';
+            
+            // Build summary sheet
+            const summaryData = [];
+            const buyerName = Array.from(selectedEntities)[0] || 'Selected Buyers';
+            const entityLabel = currentMode === 'buyer' ? 'Seller' : 'Buyer';
+            
+            summaryData.push([`${buyerName} ${entityLabel} Engagement Summary`]);
+            summaryData.push([]); // Empty row
+            
+            // Metrics table
+            summaryData.push(['Metric', 'Count']);
+            summaryData.push([`Total Counterpartied ${entityLabel}s`, totalCounterparties]);
+            summaryData.push([`Active ${entityLabel}s`, totalActive]);
+            summaryData.push([`Not Active ${entityLabel}s`, totalNotActive]);
+            summaryData.push(['Activity Rate', activityRate + '%']);
+            summaryData.push([]); // Empty row
+            
+            // Active breakdown
+            summaryData.push([`Active ${entityLabel} Breakdown`]);
+            summaryData.push([`* With ${buyerName} in Pricing Tiers:`, `${totalWithTiers} ${entityLabel.toLowerCase()}s (explicitly configured)`]);
+            summaryData.push([`* No Tiers Configured (using defaults):`, `${totalNoTiers} ${entityLabel.toLowerCase()}s`]);
+            summaryData.push([]); // Empty row
+            
+            // Sellers with explicit pricing tiers
+            if (sellersWithTiers.length > 0) {
+                summaryData.push([`${entityLabel}s with ${buyerName} Explicitly in Pricing Tiers (${sellersWithTiers.length})`]);
+                summaryData.push([entityLabel, 'Pricing Tiers']);
+                
+                sellersWithTiers.forEach(item => {
+                    summaryData.push([item.seller, item.tiers]);
+                });
+            }
+            
+            const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+            
+            // Set column widths for summary
+            summaryWs['!cols'] = [
+                { wch: 50 },  // Column A
+                { wch: 80 }   // Column B
+            ];
+            
+            // Add summary sheet first
+            XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+            
+            // Add detailed sheets for each entity
             Object.keys(currentAnalysis).forEach(entityName => {
                 const analysis = currentAnalysis[entityName];
                 
@@ -1138,9 +1218,9 @@
                 
                 // Add legend rows (will be in columns G-H)
                 const legendData = [
-                    ['Not Active', 'Seller is counterpartied to buyer and HAS seller tiers configured but does NOT have buyer activated in any seller tier'],
-                    ['Active - No tiers configured (using defaults)', 'Seller is counterpartied to buyer but does NOT have any seller tiers setup and therefore all users see Buyer in results'],
-                    ['Active - Has buyer in pricing tiers', 'Seller is counterpartied to buyer AND has seller tiers setup AND has buyer configured in tiers defined in column Pricing Tiers']
+                    ['Not Active', `${entityLabel} is counterpartied to buyer and HAS ${entityLabel.toLowerCase()} tiers configured but does NOT have buyer activated in any ${entityLabel.toLowerCase()} tier`],
+                    ['Active - No tiers configured (using defaults)', `${entityLabel} is counterpartied to buyer but does NOT have any ${entityLabel.toLowerCase()} tiers setup and therefore all users see Buyer in results`],
+                    ['Active - Has buyer in pricing tiers', `${entityLabel} is counterpartied to buyer AND has ${entityLabel.toLowerCase()} tiers setup AND has buyer configured in tiers defined in column Pricing Tiers`]
                 ];
                 
                 let maxRows = Math.max(analysis.counterpartyDetails.length, legendData.length);
