@@ -565,6 +565,43 @@
             
             return { mostRecent, thirdMostRecent };
         }
+        
+        // Helper function to check if there's a login within last 3 months
+        function hasRecentLogin(seller) {
+            if (!seller.loginDates || seller.loginDates.length === 0) {
+                return 'No';
+            }
+            
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            
+            for (let dateStr of seller.loginDates) {
+                if (!dateStr || dateStr.trim() === '') continue;
+                
+                try {
+                    const parts = dateStr.split(' ');
+                    const dateParts = parts[0].split('/');
+                    const timeParts = parts[1] ? parts[1].split(':') : ['0', '0', '0'];
+                    
+                    const month = parseInt(dateParts[0]) - 1;
+                    const day = parseInt(dateParts[1]);
+                    const year = parseInt(dateParts[2]);
+                    const hour = parseInt(timeParts[0]);
+                    const minute = parseInt(timeParts[1]);
+                    const second = parseInt(timeParts[2]);
+                    
+                    const loginDate = new Date(year, month, day, hour, minute, second);
+                    
+                    if (loginDate >= threeMonthsAgo) {
+                        return 'Yes';
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            return 'No';
+        }
 
         function handleDragOver(e) {
             e.preventDefault();
@@ -1209,55 +1246,111 @@
                     headerType, 
                     'Activity Status', 
                     'Pricing Tiers', 
+                    'Login Last 3 Months',
                     'Most Recent Login', 
                     '3rd Most Recent Login',
-                    '', // Empty column F
+                    '', // Empty column G
                     'LEGEND',
                     'Definition'
                 ]];
                 
-                // Add legend rows (will be in columns G-H)
+                // Add legend rows (will be in columns H-I)
                 const legendData = [
                     ['Not Active', `${entityLabel} is counterpartied to buyer and HAS ${entityLabel.toLowerCase()} tiers configured but does NOT have buyer activated in any ${entityLabel.toLowerCase()} tier`],
                     ['Active - No tiers configured (using defaults)', `${entityLabel} is counterpartied to buyer but does NOT have any ${entityLabel.toLowerCase()} tiers setup and therefore all users see Buyer in results`],
                     ['Active - Has buyer in pricing tiers', `${entityLabel} is counterpartied to buyer AND has ${entityLabel.toLowerCase()} tiers setup AND has buyer configured in tiers defined in column Pricing Tiers`]
                 ];
                 
-                let maxRows = Math.max(analysis.counterpartyDetails.length, legendData.length);
+                // Prepare data with all necessary info for sorting
+                const dataRows = analysis.counterpartyDetails.map(cp => {
+                    let mostRecent = '';
+                    let thirdMostRecent = '';
+                    let recentLogin = 'No';
+                    let mostRecentDate = null;
+                    
+                    if (currentMode === 'buyer' && sellerOrgs[cp.name]) {
+                        const loginDates = getLoginDates(sellerOrgs[cp.name]);
+                        mostRecent = loginDates.mostRecent;
+                        thirdMostRecent = loginDates.thirdMostRecent;
+                        recentLogin = hasRecentLogin(sellerOrgs[cp.name]);
+                        
+                        // Parse the most recent date for sorting
+                        if (mostRecent) {
+                            try {
+                                const parts = mostRecent.split(' ');
+                                const dateParts = parts[0].split('/');
+                                const timeParts = parts[1] ? parts[1].split(':') : ['0', '0', '0'];
+                                const month = parseInt(dateParts[0]) - 1;
+                                const day = parseInt(dateParts[1]);
+                                const year = parseInt(dateParts[2]);
+                                const hour = parseInt(timeParts[0]);
+                                const minute = parseInt(timeParts[1]);
+                                const second = parseInt(timeParts[2]);
+                                mostRecentDate = new Date(year, month, day, hour, minute, second);
+                            } catch (e) {
+                                mostRecentDate = new Date(0); // Default to epoch if parse fails
+                            }
+                        } else {
+                            mostRecentDate = new Date(0); // No date = epoch
+                        }
+                    }
+                    
+                    return {
+                        name: cp.name,
+                        status: cp.status,
+                        pricingTiers: cp.pricingTiers || '',
+                        recentLogin: recentLogin,
+                        mostRecent: mostRecent,
+                        thirdMostRecent: thirdMostRecent,
+                        mostRecentDate: mostRecentDate,
+                        // For sorting: Active statuses come first
+                        isActive: cp.status.startsWith('Active') ? 0 : 1
+                    };
+                });
                 
-                // Build data rows
+                // Sort by: 1) Activity Status (Active first), 2) Most Recent Login (newest first), 3) Name (alphabetical)
+                dataRows.sort((a, b) => {
+                    // First sort by activity status
+                    if (a.isActive !== b.isActive) {
+                        return a.isActive - b.isActive;
+                    }
+                    
+                    // Then by most recent login date (newest first)
+                    if (a.mostRecentDate && b.mostRecentDate) {
+                        const dateDiff = b.mostRecentDate - a.mostRecentDate;
+                        if (dateDiff !== 0) return dateDiff;
+                    }
+                    
+                    // Finally by name alphabetically
+                    return a.name.localeCompare(b.name);
+                });
+                
+                let maxRows = Math.max(dataRows.length, legendData.length);
+                
+                // Build sorted data rows
                 for (let i = 0; i < maxRows; i++) {
                     const row = [];
                     
-                    // Columns A-E: Counterparty data
-                    if (i < analysis.counterpartyDetails.length) {
-                        const cp = analysis.counterpartyDetails[i];
-                        
-                        // Get login dates for this seller (only applicable in buyer mode)
-                        let mostRecent = '';
-                        let thirdMostRecent = '';
-                        if (currentMode === 'buyer' && sellerOrgs[cp.name]) {
-                            const loginDates = getLoginDates(sellerOrgs[cp.name]);
-                            mostRecent = loginDates.mostRecent;
-                            thirdMostRecent = loginDates.thirdMostRecent;
-                        }
-                        
+                    // Columns A-F: Counterparty data
+                    if (i < dataRows.length) {
+                        const data = dataRows[i];
                         row.push(
-                            cp.name,
-                            cp.status,
-                            cp.pricingTiers || '',
-                            mostRecent,
-                            thirdMostRecent
+                            data.name,
+                            data.status,
+                            data.pricingTiers,
+                            data.recentLogin,
+                            data.mostRecent,
+                            data.thirdMostRecent
                         );
                     } else {
                         // Empty cells for counterparty data
-                        row.push('', '', '', '', '');
+                        row.push('', '', '', '', '', '');
                     }
                     
-                    // Column F: Empty separator
+                    // Column G: Empty separator
                     row.push('');
                     
-                    // Columns G-H: Legend
+                    // Columns H-I: Legend
                     if (i < legendData.length) {
                         row.push(legendData[i][0], legendData[i][1]);
                     } else {
@@ -1274,11 +1367,12 @@
                     { wch: 40 },  // A: Counterpartied Seller/Buyer
                     { wch: 50 },  // B: Activity Status
                     { wch: 40 },  // C: Pricing Tiers
-                    { wch: 20 },  // D: Most Recent Login
-                    { wch: 20 },  // E: 3rd Most Recent Login
-                    { wch: 3 },   // F: Separator
-                    { wch: 45 },  // G: Legend - Status
-                    { wch: 100 }  // H: Legend - Definition
+                    { wch: 20 },  // D: Login Last 3 Months
+                    { wch: 20 },  // E: Most Recent Login
+                    { wch: 20 },  // F: 3rd Most Recent Login
+                    { wch: 3 },   // G: Separator
+                    { wch: 45 },  // H: Legend - Status
+                    { wch: 100 }  // I: Legend - Definition
                 ];
                 
                 let sheetName = entityName.substring(0, 31);
