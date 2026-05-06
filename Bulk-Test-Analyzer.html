@@ -19,62 +19,60 @@
 
     // Expected investors list - these should always return pricing for "BigFriendly" loans
     const EXPECTED_INVESTORS = [
-      "Acra Lending",
-      "ACC Mortgage",
-      "AD Mortgage",
-      "American Heritage Lending",
-      "Angel Oak Mortgage",
-      "Arc Home Loans",
-      "Arch Mortgage Funding",
-      "Athene Asset Management",
-      "BluePoint Mortgage",
-      "Carrington Mortgage Services",
+      "ACC Mortgage: Wholesale",
+      "AD Mortgage LLC - Correspondent",
+      "AD Mortgage LLC - Wholesale",
+      "ADAMAS",
+      "Angel Oak MS: Correspondent",
+      "Angel Oak MS: Wholesale",
+      "Arc Home Corr",
+      "Arc Home, LLC: Wholesale",
+      "Arch Mortgage Funding, Inc",
+      "AXOS Bank",
+      "Bluepoint Mortgage",
+      "Bluepoint Mortgage - Corr",
+      "Button Finance, Inc.",
+      "Carrington Mortgage",
+      "Carrington Mortgage WS",
+      "Castor Financial Inc",
       "Champions Funding",
-      "ClearEdge Lending",
-      "Deephaven",
+      "Champions Funding - Corr",
+      "ClearEdge Lending: Corr",
+      "Deephaven Mortgage: Correspondent",
+      "Deephaven Mortgage: Wholesale",
+      "Ellington Management Group, LLC",
       "eResi",
-      "First National Bank of America",
-      "HomeXpress",
-      "LoanStream Mortgage",
-      "Logan Finance Corp.",
-      "Lone Star Funds",
-      "Luxury Mortgage",
-      "Maxex",
-      "Newfi",
-      "Newrez",
+      "FundLoans Capital",
+      "HOMEXPRESS MORTGAGE CORP.",
+      "LenderMac",
+      "LoanStream - Corr",
+      "LoanStream - WS",
+      "Logan Finance Corporation Wholesale",
+      "Logan Finance Correspondent",
+      "Luxury Correspondent",
+      "Luxury Mortgage: Wholesale",
+      "MAVLENDS",
+      "MAXEX",
+      "MEGA CAPITAL FUNDING, INC - Corr",
+      "Newfi Lending: Correspondent",
+      "Newfi: Wholesale",
+      "NewRez LLC",
       "NQM Funding",
-      "New York Mortgage Trust (NYMT)",
-      "Oaktree Funding Corp.",
+      "NQM Funding WS",
+      "Oaktree Funding Corp. - Correspondent",
+      "Onity Mortgage Corporation, f/k/a PHH Mortgage Corporation",
       "Onslow Bay Financial",
-      "PennyMac",
-      "PHH Mortgage",
+      "PennyMac - Correspondent",
+      "PennyMac - Wholesale",
       "Redwood Trust",
-      "SG Capital Partners",
+      "Redwood Trust, Inc.",
+      "Rocket Mortgage, LLC",
+      "SG Capital",
       "Silver Hill Capital",
       "The Money Source",
-      "Titan Bank",
-      "Verus",
-      "Vista Point",
-      "Western Alliance",
-      "AHL Funding",
-      "Axos Bank",
-      "Broadview",
-      "Capital Alliance",
-      "Castor Financial",
-      "Clout wmb",
-      "Developers Mortgage",
-      "Dominion Financial Services",
-      "First Equity Funding",
-      "FundLoans Capital",
-      "LendVent Realty Capital",
-      "Legions Capital",
-      "LoanLock Prime",
-      "Maverick Lending",
-      "Park Place",
-      "Ponce Mortgage",
-      "TheLender",
-      "Thunderbird",
-      "Goldman Sachs"
+      "Verus MC",
+      "Vista Point Mortgage",
+      "Western Alliance Bank"
     ];
 
     // Function to normalize investor names for matching
@@ -166,6 +164,20 @@
           const uniqueProducts = [...new Set(data.map(r => r.ProductDescription))];
           const uniqueInvestors = [...new Set(data.map(r => r.InvestorName))];
 
+          // Helper: compute which expected investors did NOT return pricing for a given loan
+          const getMissingExpectedForLoan = (loan) => {
+            const loanData = data.filter(r => r.LoanNumber === loan);
+            const investorsFound = [...new Set(loanData.map(r => r.InvestorName))];
+            const missing = [];
+            EXPECTED_INVESTORS.forEach(expectedInv => {
+              const found = investorsFound.some(actual =>
+                matchesExpectedInvestor(actual, [expectedInv]) !== null
+              );
+              if (!found) missing.push(expectedInv);
+            });
+            return missing;
+          };
+
           // 1. Find Big Winners (Outliers)
           const outliers = [];
           
@@ -198,7 +210,8 @@
                     secondProgram: productData[1].ProgramName,
                     secondPrice: secondPrice,
                     delta: delta,
-                    allPrices: productData.slice(0, 5)
+                    allPrices: productData.slice(0, 5),
+                    missingExpectedInvestors: getMissingExpectedForLoan(loan)
                   });
                 }
               }
@@ -359,12 +372,15 @@
         // Outliers Sheet
         const outliersData = [
           ['Loan Number', 'Product', 'Top Investor', 'Top Program', 'Top Price', 
-           'Second Investor', 'Second Program', 'Second Price', 'Delta']
+           'Second Investor', 'Second Program', 'Second Price', 'Delta',
+           'Missing Expected Investors Count', 'Missing Expected Investors']
         ];
         analysisResults.outliers.forEach(o => {
           outliersData.push([
             o.loanNumber, o.product, o.topInvestor, o.topProgram, o.topPrice,
-            o.secondInvestor, o.secondProgram, o.secondPrice, o.delta.toFixed(4)
+            o.secondInvestor, o.secondProgram, o.secondPrice, o.delta.toFixed(4),
+            (o.missingExpectedInvestors || []).length,
+            (o.missingExpectedInvestors || []).join(', ')
           ]);
         });
         const outliersWs = XLSX.utils.aoa_to_sheet(outliersData);
@@ -685,6 +701,21 @@
                                     <div className="text-xs text-gray-500">{outlier.secondProgram}</div>
                                   </div>
                                 </div>
+
+                                {outlier.missingExpectedInvestors && outlier.missingExpectedInvestors.length > 0 && (
+                                  <div className="mt-3 bg-amber-50 border border-amber-200 rounded p-3">
+                                    <div className="text-xs font-medium text-amber-800 mb-2">
+                                      ℹ️ FYI — {outlier.missingExpectedInvestors.length} expected investor(s) did NOT price this loan:
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {outlier.missingExpectedInvestors.map((inv, i) => (
+                                        <span key={i} className="px-2 py-0.5 bg-amber-100 text-amber-900 text-xs rounded">
+                                          {inv}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
