@@ -220,7 +220,7 @@
 
           // 2. BigFriendly Coverage Analysis
           const bigFriendlyLoans = uniqueLoans.filter(loan => 
-            loan.toLowerCase().includes('bigfriendly')
+            String(loan).toLowerCase().includes('bigfriendly')
           );
           
           const coverageResults = [];
@@ -265,7 +265,7 @@
 
           // 3. NeverPrice Analysis - These loans should NOT return any pricing
           const neverPriceLoans = uniqueLoans.filter(loan => 
-            loan.toLowerCase().includes('neverprice')
+            String(loan).toLowerCase().includes('neverprice')
           );
           
           const neverPriceViolations = [];
